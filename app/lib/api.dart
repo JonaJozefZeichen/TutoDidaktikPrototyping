@@ -104,17 +104,26 @@ class Api {
 }
 
 class Stammdaten {
-  const Stammdaten({required this.levels, required this.kompetenzen, required this.maturaThemen});
+  const Stammdaten({
+    required this.levels,
+    required this.kompetenzen,
+    required this.maturaThemen,
+    this.fehlerbilder = const [],
+  });
 
   factory Stammdaten.fromJson(Map<String, dynamic> j) => Stammdaten(
     levels: (j['levels'] as List).cast<Map<String, dynamic>>(),
     kompetenzen: (j['kompetenzen'] as List).cast<String>(),
     maturaThemen: (j['matura_themen'] as List).cast<Map<String, dynamic>>(),
+    fehlerbilder: ((j['fehlerbilder'] as List?) ?? const []).cast<String>(),
   );
 
   final List<Map<String, dynamic>> levels;
   final List<String> kompetenzen;
   final List<Map<String, dynamic>> maturaThemen;
+
+  /// Schon verwendete Fehlerbild-Namen, als Vorschläge.
+  final List<String> fehlerbilder;
 
   PruefKontext get kontext =>
       PruefKontext(levels: {for (final l in levels) l['id'] as String}, kompetenzen: kompetenzen.toSet());

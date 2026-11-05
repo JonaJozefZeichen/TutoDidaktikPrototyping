@@ -31,7 +31,7 @@ fi
 
 if [ "$MODUS" = normal ]; then
   ZIEL_JS=app/build/web/main.dart.js
-  if [ ! -f "$ZIEL_JS" ] || [ -n "$(find app/lib app/assets app/pubspec.yaml packages/didaktik_kern/lib -newer "$ZIEL_JS" -print -quit)" ]; then
+  if [ ! -f "$ZIEL_JS" ] || [ -n "$(find app/lib app/assets app/web app/pubspec.yaml packages/didaktik_kern/lib -newer "$ZIEL_JS" -print -quit)" ]; then
     echo "Baue die Web-App, das dauert etwa eine Minute ..."
     (cd app && flutter build web --release --no-web-resources-cdn >/dev/null)
   fi

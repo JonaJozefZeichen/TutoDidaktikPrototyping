@@ -52,7 +52,7 @@ Alle Regeln liegen in `Bestand`, die Routen in `Schnittstelle`. Der lokale Serve
 
 **Kopien aus dem Prototyp** (TutoPrototyping, Commit `c4d4e8d`), jeweils mit Kopfkommentar:
 
-- `packages/didaktik_kern/lib/src/aus_prototyp/`: `content`, `answer_checker`, `term`; einzige Änderung: `zurueckgezogen` gilt als Status.
+- `packages/didaktik_kern/lib/src/aus_prototyp/`: `content`, `answer_checker`, `term`; Änderungen: `zurueckgezogen` gilt als Status, und `answer_checker` liefert Fehlerbilder auch für `mc_2aus5`, `lueckentext`, `zuordnung`, Terme und Mehrfeld-Werte.
 - `app/lib/vorschau/`: Antwort-Widgets, Medien und Design System; `design_system_controller.dart` ist vereinfacht, weil das Original `dart:io` nutzt.
 
 Sie werden ersetzt, sobald Tool und App ein gemeinsames Paket bekommen (Phase 5). Bis dahin Änderungen am Prototyp bei Bedarf von Hand nachziehen.
@@ -67,7 +67,7 @@ Sie werden ersetzt, sobald Tool und App ein gemeinsames Paket bekommen (Phase 5)
 
 `app/test/bilder/` enthält gerenderte Bilder der Seiten. Nach sichtbaren Änderungen neu erzeugen: `flutter test test/bilder_test.dart --update-goldens`.
 
-Texte aus dem Vault aktualisieren: `python3 tools/hilfe_sync.py`.
+Texte und den Leitfaden (PDF) aus dem Vault aktualisieren: `python3 tools/hilfe_sync.py`.
 
 ## Noch nicht drin
 

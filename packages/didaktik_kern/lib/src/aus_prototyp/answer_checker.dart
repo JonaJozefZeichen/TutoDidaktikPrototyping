@@ -47,30 +47,53 @@ class AnswerChecker {
       case 'mc_2aus5':
         if (antwort is! Set<int>) return const CheckResult(0);
         final richtig = {...(a['richtig'] as List).cast<int>()};
-        return CheckResult(antwort.length == 2 && antwort.containsAll(richtig) ? 1 : 0);
+        if (antwort.length == 2 && antwort.containsAll(richtig)) return const CheckResult(1);
+        return CheckResult(0, fehlerbild: _erstesFehlerbild(item, [for (final i in antwort.difference(richtig)) '$i']));
       case 'lueckentext':
         if (antwort is! List) return const CheckResult(0);
         final richtig = (a['richtig'] as List).cast<int>();
         final ok = antwort.length == 2 && antwort[0] == richtig[0] && antwort[1] == richtig[1];
-        return CheckResult(ok ? 1 : 0);
+        if (ok) return const CheckResult(1);
+        return CheckResult(
+          0,
+          fehlerbild: _erstesFehlerbild(item, [
+            for (var n = 0; n < antwort.length && n < richtig.length; n++)
+              if (antwort[n] != richtig[n]) '${n + 1}:${antwort[n]}',
+          ]),
+        );
       case 'zuordnung':
         if (antwort is! Map<int, String>) return const CheckResult(0);
         final richtig = (a['richtig'] as Map).map((k, v) => MapEntry(int.parse('$k'), '$v'));
         final treffer = richtig.entries.where((e) => antwort[e.key] == e.value).length;
         if (treffer == richtig.length) return const CheckResult(1);
-        if (item.punkteschema == '0/½/1' && treffer >= 2) return const CheckResult(0.5);
-        return const CheckResult(0);
+        final fehlerbild = _erstesFehlerbild(item, [
+          for (final e in richtig.entries)
+            if (antwort[e.key] != e.value && antwort[e.key] != null) antwort[e.key]!,
+        ]);
+        if (item.punkteschema == '0/½/1' && treffer >= 2) return CheckResult(0.5, fehlerbild: fehlerbild);
+        return CheckResult(0, fehlerbild: fehlerbild);
       case 'offen_term':
-        return CheckResult(antwort is String && gleichwertig(antwort, a['term'] as String) ? 1 : 0);
+        if (antwort is String && gleichwertig(antwort, a['term'] as String)) return const CheckResult(1);
+        return CheckResult(0, fehlerbild: antwort is String ? _termFehlerbild(item, antwort) : null);
       case 'offen_zahl' || 'halboffen':
         if (a['art'] == 'term') {
           final eingabe = antwort is List ? (antwort.isEmpty ? '' : '${antwort.first}') : '$antwort';
-          return CheckResult(gleichwertig(eingabe, (a['term'] ?? a['wert']) as String) ? 1 : 0);
+          if (gleichwertig(eingabe, (a['term'] ?? a['wert']) as String)) return const CheckResult(1);
+          return CheckResult(0, fehlerbild: _termFehlerbild(item, eingabe));
         }
         final eingaben = antwort is List ? [for (final e in antwort) '$e'] : [antwort is String ? antwort : ''];
         if (a['pruefregel'] is List) return CheckResult(_regelnErfuellt(a['pruefregel'] as List, eingaben) ? 1 : 0);
         final loesung = loesungsWert(item, werte);
-        if (loesung is List) return CheckResult(_listeRichtig(eingaben, loesung.cast<num>(), a) ? 1 : 0);
+        if (loesung is List) {
+          if (_listeRichtig(eingaben, loesung.cast<num>(), a)) return const CheckResult(1);
+          for (final e in item.fehlerbilder.entries) {
+            final werte = [for (final t in e.key.split(';')) parseZahl(t.trim())];
+            if (werte.every((w) => w != null) && _listeRichtig(eingaben, werte.cast<num>(), a)) {
+              return CheckResult(0, fehlerbild: e.value);
+            }
+          }
+          return const CheckResult(0);
+        }
         final eingabe = eingaben.first;
         final x = parseZahl(eingabe);
         if (x == null || loesung is! num) return const CheckResult(0);
@@ -89,6 +112,23 @@ class AnswerChecker {
         return const CheckResult(0);
     }
   }
+}
+
+// Abweichung von der Kopie: Fehlerbilder auch für mc_2aus5, lueckentext,
+// zuordnung, Terme und Mehrfeld-Werte (Schlüssel siehe Aufgaben Struktur).
+String? _erstesFehlerbild(Item item, List<String> schluessel) {
+  for (final s in schluessel) {
+    final f = item.fehlerbilder[s];
+    if (f != null) return f;
+  }
+  return null;
+}
+
+String? _termFehlerbild(Item item, String eingabe) {
+  for (final e in item.fehlerbilder.entries) {
+    if (gleichwertig(eingabe, e.key)) return e.value;
+  }
+  return null;
 }
 
 /// Ein Feld richtig: innerhalb der Toleranz oder richtig gerundet.

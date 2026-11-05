@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuto_didaktik/api.dart';
 import 'package:tuto_didaktik/demo.dart';
+import 'package:tuto_didaktik/hilfe.dart';
 import 'package:tuto_didaktik/main.dart';
 
 const id = 'tuto-ag5-01-a01';
@@ -14,6 +17,12 @@ Future<(Api, DemoClient)> starteDemo() async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('der Leitfaden liegt bei der Website und der Link zeigt darauf', () {
+    expect(File('web/$leitfadenPfad').existsSync(), isTrue);
+    final seite = Uri.parse('https://x.github.io/Repo/#/');
+    expect(seite.removeFragment().resolve(leitfadenPfad).toString(), 'https://x.github.io/Repo/$leitfadenPfad');
+  });
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
@@ -71,6 +80,7 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('Demo: Änderungen bleiben nur in diesem Browser'), findsOneWidget);
     expect(find.text('Zu prüfen (12)'), findsOneWidget);
+    expect(find.byKey(const ValueKey('leitfaden-knopf')), findsOneWidget);
     await t.tap(find.byKey(const ValueKey('demo-zuruecksetzen')));
     await t.pumpAndSettle();
     await t.tap(find.widgetWithText(FilledButton, 'Zurücksetzen'));

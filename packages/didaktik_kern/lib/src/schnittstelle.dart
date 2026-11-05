@@ -80,7 +80,7 @@ class Schnittstelle {
     if (methode == 'GET') {
       switch (pfad) {
         case ['stammdaten']:
-          return listen.toJson();
+          return {...listen.toJson(), 'fehlerbilder': _fehlerbildNamen()};
         case ['aufgaben']:
           return [for (final e in bestand.eintraege.values) bestand.zeile(e)];
         case ['aufgaben', final id]:
@@ -116,6 +116,18 @@ class Schnittstelle {
       }
     }
     throw const RegelFehler('nicht_gefunden', 'Diese Anfrage gibt es nicht', status: 404);
+  }
+
+  /// Schon verwendete Namen, als Vorschläge beim Eintippen.
+  List<String> _fehlerbildNamen() {
+    final namen = <String>{};
+    for (final e in bestand.eintraege.values) {
+      for (final i in alleItems(e.aktuell.inhalt)) {
+        final fb = i['fehlerbilder'];
+        if (fb is Map) namen.addAll(fb.values.whereType<String>());
+      }
+    }
+    return namen.toList()..sort();
   }
 
   Person _person(String? id) {

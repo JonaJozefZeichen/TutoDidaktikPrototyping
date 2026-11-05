@@ -5,6 +5,7 @@ library;
 import 'dart:convert';
 
 import 'package:didaktik_kern/src/aus_prototyp/content.dart';
+import 'package:didaktik_kern/src/aus_prototyp/term.dart' show gleichwertig;
 import 'package:didaktik_kern/src/felder.dart';
 
 class Befund {
@@ -162,6 +163,7 @@ void _pruefeItem(
   } else if (_leer(it['folgefehler'])) {
     b.add(Befund('$pfad/folgefehler', 'Bei einer Abhängigkeit festlegen, ob der Folgefehler gilt'));
   }
+  _pruefeFehlerbilder(it, '$pfad/fehlerbilder', b);
   final format = it['antwortformat'];
   final antwort = it['antwort'];
   if (antwort is! Map<String, dynamic>) {
@@ -182,6 +184,81 @@ void _pruefeItem(
       }
     }
   }
+}
+
+final _fehlerbildMuster = RegExp(r'^[a-z0-9_]+$');
+
+/// Schlüssel von `fehlerbilder` je Format, siehe Aufgaben Struktur.
+void _pruefeFehlerbilder(Map<String, dynamic> it, String pfad, List<Befund> b) {
+  final fb = it['fehlerbilder'];
+  if (fb == null) return;
+  if (fb is! Map) {
+    b.add(Befund(pfad, 'Fehlerbilder sind unlesbar'));
+    return;
+  }
+  final format = it['antwortformat'];
+  final a = it['antwort'] is Map ? it['antwort'] as Map : const {};
+  for (final e in fb.entries) {
+    final k = '${e.key}';
+    final name = e.value;
+    if (name is! String || !_fehlerbildMuster.hasMatch(name)) {
+      b.add(Befund(pfad, 'Fehlerbild "$name": nur Kleinbuchstaben, Ziffern und _, z. B. vorzeichenfehler'));
+    }
+    final passt = switch (format) {
+      'mc_1aus5' => _mcSchluessel(k, 5, [a['richtig']]),
+      'mc_1aus6' => _mcSchluessel(k, 6, [a['richtig']]),
+      'mc_2aus5' => _mcSchluessel(k, 5, a['richtig'] is List ? a['richtig'] as List : const []),
+      'lueckentext' => _lueckeSchluessel(k, a['richtig']),
+      'zuordnung' => _zuordnungSchluessel(k, a['richtig']),
+      'offen_zahl' || 'halboffen' when a['art'] != 'term' => _wertSchluessel(k, a),
+      'offen_term' => gleichwertig(k, '${a['term']}') ? _Schluessel.richtig : _Schluessel.ok,
+      'halboffen' => gleichwertig(k, '${a['term'] ?? a['wert']}') ? _Schluessel.richtig : _Schluessel.ok,
+      _ => _Schluessel.unpassend,
+    };
+    if (passt == _Schluessel.richtig) {
+      b.add(Befund(pfad, 'Fehlerbild "$name" steht an einer richtigen Antwort ($k)'));
+    } else if (passt == _Schluessel.unpassend) {
+      b.add(Befund(pfad, 'Fehlerbild "$name": "$k" passt nicht zu diesem Antwortformat', istFehler: false));
+    }
+  }
+}
+
+enum _Schluessel { ok, richtig, unpassend }
+
+_Schluessel _mcSchluessel(String k, int n, List<dynamic> richtig) {
+  final i = int.tryParse(k);
+  if (i == null || i < 0 || i >= n) return _Schluessel.unpassend;
+  return richtig.contains(i) ? _Schluessel.richtig : _Schluessel.ok;
+}
+
+_Schluessel _lueckeSchluessel(String k, Object? richtig) {
+  final m = RegExp(r'^([12]):([0-2])$').firstMatch(k);
+  if (m == null) return _Schluessel.unpassend;
+  final luecke = int.parse(m.group(1)!) - 1;
+  final ok = richtig is List && richtig.length > luecke && richtig[luecke] == int.parse(m.group(2)!);
+  return ok ? _Schluessel.richtig : _Schluessel.ok;
+}
+
+_Schluessel _zuordnungSchluessel(String k, Object? richtig) {
+  if (!RegExp(r'^[A-F]$').hasMatch(k)) return _Schluessel.unpassend;
+  return richtig is Map && richtig.values.contains(k) ? _Schluessel.richtig : _Schluessel.ok;
+}
+
+_Schluessel _wertSchluessel(String k, Map<dynamic, dynamic> a) {
+  final werte = [for (final t in k.split(';')) num.tryParse(t.trim().replaceAll(',', '.'))];
+  if (werte.any((w) => w == null)) return _Schluessel.unpassend;
+  final tol = a['toleranz'] is num ? a['toleranz'] as num : 0;
+  final wert = a['wert'];
+  final richtig = wert is List ? wert : [wert];
+  if (richtig.length != werte.length || richtig.any((w) => w is! num)) return _Schluessel.ok;
+  final egal = a['reihenfolge_egal'] == 'ja' || a['reihenfolge_egal'] == true;
+  List<num> folge(List<dynamic> l) => [...l.cast<num>()]..sort();
+  final x = egal ? folge(werte) : werte.cast<num>();
+  final y = egal ? folge(richtig) : richtig.cast<num>();
+  for (var i = 0; i < x.length; i++) {
+    if ((x[i] - y[i]).abs() > tol + 1e-9) return _Schluessel.ok;
+  }
+  return _Schluessel.richtig;
 }
 
 /// Die Prüfung der App läuft zusätzlich, damit Tool und App dieselben Regeln

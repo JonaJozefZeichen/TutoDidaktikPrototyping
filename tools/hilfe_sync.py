@@ -3,6 +3,7 @@
 
 - Bauplan Aufgabenerstellung.md -> app/assets/hilfe/bauplan.md (ohne Frontmatter,
   "Siehe auch", "Änderungsverlauf", Pflegehinweise; wie beim PDF)
+- Aufgaben - Bauplan und Datenmodell.pdf -> app/web/dokumente/ (öffentlich, für den Leitfaden-Knopf)
 - Lernplan 5.-8. Klasse.md -> seed/privat/matura_themen.json
 
 Nach Änderungen an den Notizen neu ausführen: python3 tools/hilfe_sync.py
@@ -10,6 +11,7 @@ Nach Änderungen an den Notizen neu ausführen: python3 tools/hilfe_sync.py
 import json
 import pathlib
 import re
+import shutil
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 VAULT = pathlib.Path.home() / "Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Tuto | Jona"
@@ -30,6 +32,13 @@ def bauplan():
     print("Hilfe:", ziel.relative_to(WURZEL), len(t), "Zeichen")
 
 
+def leitfaden():
+    ziel = WURZEL / "app/web/dokumente/aufgaben-bauplan-und-datenmodell.pdf"
+    ziel.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(AUFGABEN / "Aufgaben - Bauplan und Datenmodell.pdf", ziel)
+    print("Leitfaden:", ziel.relative_to(WURZEL))
+
+
 def matura_themen():
     t = (AUFGABEN / "Lernplan 5.-8. Klasse.md").read_text(encoding="utf8")
     themen = {}
@@ -42,4 +51,5 @@ def matura_themen():
 
 
 bauplan()
+leitfaden()
 matura_themen()

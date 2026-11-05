@@ -2,7 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import 'package:tuto_didaktik/thema.dart';
+
+/// Das PDF liegt bei der Website (`web/dokumente/`) und öffnet sich in einem
+/// neuen Tab. Der Pfad ist relativ, damit es auch unter der GitHub Page stimmt.
+const leitfadenPfad = 'dokumente/aufgaben-bauplan-und-datenmodell.pdf';
+
+Future<void> oeffneLeitfaden() =>
+    launchUrl(Uri.base.removeFragment().resolve(leitfadenPfad), webOnlyWindowName: '_blank');
 
 /// Steuert die Hilfe-Seitenleiste; von überall erreichbar.
 class HilfeSteuerung extends ChangeNotifier {
@@ -152,6 +161,17 @@ class _HilfeLeisteState extends State<HilfeLeiste> {
                       ),
               ),
               onChanged: (_) => setState(() {}),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: oeffneLeitfaden,
+                icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                label: const Text('Ganzer Leitfaden als PDF'),
+              ),
             ),
           ),
           const Divider(),

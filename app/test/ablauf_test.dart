@@ -186,6 +186,85 @@ void main() {
     expect(find.textContaining('gilt als richtig'), findsOneWidget);
   });
 
+  group('Antwort-Slots', () {
+    Map<String, dynamic> antwortVon(Eintrag e) => (e.aktuell.inhalt['items'] as List).first as Map<String, dynamic>;
+
+    testWidgets('Öffnen ändert nichts, richtige Antwort steht zuerst', (t) async {
+      await starte(t, testApi());
+      await oeffneAufgabe(t, id);
+      expect(find.text('Nicht gespeichert'), findsNothing);
+      await t.scrollUntilVisible(find.text('Richtige Antwort'), 300, scrollable: find.byType(Scrollable).last);
+      final richtig = t.getTopLeft(find.text('Richtige Antwort'));
+      final falsch = t.getTopLeft(find.text('Falsche Antwort 1'));
+      expect(richtig.dy, lessThan(falsch.dy));
+      expect(find.text('Falsche Antwort 5'), findsOneWidget); // mc_1aus6
+      expect(find.text('Nicht gespeichert'), findsNothing);
+    });
+
+    testWidgets('Fehlerbild landet beim richtigen Schlüssel und wird beim Testen gezeigt', (t) async {
+      final api = testApi();
+      await starte(t, api);
+      await oeffneAufgabe(t, id);
+      await t.scrollUntilVisible(find.text('Falsche Antwort 1'), 300, scrollable: find.byType(Scrollable).last);
+      // Erste falsche Option von a01 ist 7/8 (Index 0), richtig ist Index 3.
+      await t.enterText(find.widgetWithText(TextField, 'Fehlerbild, z. B. vorzeichenfehler').first, 'bruch_ist_irrational');
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('speichern')));
+      await t.pumpAndSettle();
+      expect(antwortVon((await api.aufgabe(id)).eintrag)['fehlerbilder'], {'0': 'bruch_ist_irrational'});
+      await t.tap(find.text('7/8').first);
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('antwort-testen')));
+      await t.pumpAndSettle();
+      expect(find.textContaining('Fehlerbild: bruch_ist_irrational'), findsOneWidget);
+    });
+
+    testWidgets('"Das ist richtig" tauscht die Rollen und löscht das Fehlerbild', (t) async {
+      final api = testApi();
+      await starte(t, api);
+      await oeffneAufgabe(t, id);
+      await t.scrollUntilVisible(find.text('Falsche Antwort 1'), 300, scrollable: find.byType(Scrollable).last);
+      await t.enterText(find.widgetWithText(TextField, 'Fehlerbild, z. B. vorzeichenfehler').first, 'x');
+      await t.pumpAndSettle();
+      await t.tap(find.text('Das ist richtig').first);
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('speichern')));
+      await t.pumpAndSettle();
+      final item = antwortVon((await api.aufgabe(id)).eintrag);
+      expect((item['antwort'] as Map)['richtig'], 0);
+      expect(item['fehlerbilder'], isEmpty);
+    });
+
+    testWidgets('freie Zeilen: Zahl mit Komma, neue Zeile erscheint, Fehlerbild an richtigem Wert wird gemeldet', (t) async {
+      final api = testApi();
+      await starte(t, api);
+      final aufgaben = (jsonDecode(File('${datenPfad.path}/aufgaben.json').readAsStringSync()) as Map)['aufgaben'] as List;
+      final a = aufgaben.firstWhere((x) => x['items'][0]['antwortformat'] == 'offen_zahl') as Map;
+      final aid = a['id'] as String;
+      await oeffneAufgabe(t, aid);
+      await t.scrollUntilVisible(find.text('Falsche Antwort 1'), 300, scrollable: find.byType(Scrollable).last);
+      expect(find.text('Falsche Antwort 2'), findsNothing);
+      await t.enterText(find.widgetWithText(TextField, '16').first, '6,25');
+      await t.pumpAndSettle();
+      expect(find.text('Wird erst mit beiden Angaben gespeichert.'), findsOneWidget);
+      expect(find.text('Falsche Antwort 2'), findsOneWidget);
+      await t.enterText(find.widgetWithText(TextField, 'Fehlerbild, z. B. vorzeichenfehler').first, 'prozent_vergessen');
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('speichern')));
+      await t.pumpAndSettle();
+      expect(antwortVon((await api.aufgabe(aid)).eintrag)['fehlerbilder'], {'6.25': 'prozent_vergessen'});
+    });
+
+    testWidgets('selbst bewertete Formate haben keine falschen Slots', (t) async {
+      await starte(t, testApi());
+      final aufgaben = (jsonDecode(File('${datenPfad.path}/aufgaben.json').readAsStringSync()) as Map)['aufgaben'] as List;
+      final a = aufgaben.firstWhere((x) => x['items'][0]['antwortformat'] == 'offen_text') as Map;
+      await oeffneAufgabe(t, a['id'] as String);
+      await t.scrollUntilVisible(find.textContaining('bewerten die Lernenden selbst, deshalb'), 300, scrollable: find.byType(Scrollable).last);
+      expect(find.text('Falsche Antwort 1'), findsNothing);
+    });
+  });
+
   testWidgets('Hilfe öffnet sich vom Feld aus mit Suche', (t) async {
     await starte(t, testApi());
     await oeffneAufgabe(t, id);

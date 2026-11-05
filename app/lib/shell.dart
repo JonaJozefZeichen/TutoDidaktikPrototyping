@@ -47,7 +47,7 @@ class _ShellState extends State<Shell> {
 
   Future<void> _lade() async {
     try {
-      final stamm = _stamm ?? await widget.api.stammdaten();
+      final stamm = await widget.api.stammdaten();
       final zeilen = await widget.api.aufgaben();
       if (!mounted) return;
       setState(() {
@@ -152,26 +152,37 @@ class _ShellState extends State<Shell> {
                   Text('Tuto Didaktik-Tool', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(width: 10),
                   // Schmale Fenster kürzen den Hinweis, statt überzulaufen.
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: const Color(0xFFFFF4D6), borderRadius: BorderRadius.circular(4)),
-                      child: Text(
-                        widget.demo == null ? 'Testmodus' : 'Demo: Änderungen bleiben nur in diesem Browser',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: hinweisGelb),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: const Color(0xFFFFF4D6), borderRadius: BorderRadius.circular(4)),
+                        child: Text(
+                          widget.demo == null ? 'Testmodus' : 'Demo: Änderungen bleiben nur in diesem Browser',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: hinweisGelb),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Spacer(),
                   if (widget.demo != null)
                     TextButton(
                       key: const ValueKey('demo-zuruecksetzen'),
                       onPressed: _zuruecksetzen,
                       child: const Text('Zurücksetzen'),
                     ),
+                  Tooltip(
+                    message: 'Aufgaben: Bauplan und Datenmodell (PDF)',
+                    child: TextButton.icon(
+                      key: const ValueKey('leitfaden-knopf'),
+                      onPressed: oeffneLeitfaden,
+                      icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                      label: const Text('Leitfaden'),
+                    ),
+                  ),
                   TextButton.icon(
                     key: const ValueKey('hilfe-knopf'),
                     onPressed: _hilfe.umschalten,

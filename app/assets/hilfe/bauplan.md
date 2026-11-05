@@ -128,7 +128,7 @@ Ein Level besteht aus **Plätzen**, meist 4-5, in aufsteigender Reihenfolge. Jed
 | `antwortformat`**, **`antwort` | ja | eines der zehn Formate mit der Lösung (siehe Antwortformate) |
 | `punkteschema` | ja | `0/1` oder `0/½/1`; bei `0/½/1` dazu `halbpunkt_regel` (`je_luecke` · `je_wert` · `zuordnung_2_bis_3`) |
 | `loesungsweg` | ja | Lösungsschritte, werden nach der Abgabe gezeigt |
-| `fehlerbilder` | – | typische falsche Antwort → Name, z. B. `"-2": "vorzeichenfehler"`; bei Ankreuzformaten der Index der Option |
+| `fehlerbilder` | – | typische falsche Antwort → Name, z. B. `"-2": "vorzeichenfehler"`. Schlüssel je Format: Ankreuzformate der Index der Option (`"2"`), `lueckentext` Lücke und Option (`"1:2"`), `zuordnung` der Buchstabe (`"E"`), offene Zahlen der Wert (`"6.25"`, mehrere Felder `"2; 3"`), Terme der Term; Name nur aus Kleinbuchstaben, Ziffern und `_`; nicht bei selbst bewerteten Formaten. Im Didaktik-Tool trägt man sie direkt bei den falschen Antworten ein |
 | `hilfen` | ja | drei Hilfen (Stufe 1-3) mit Text und Freigabe-Regel |
 | `abhaengig_von`, `folgefehler` | – | nur bei Kontextaufgaben: früheres Item, auf dem dieses aufbaut; `ja` = gegen die eigene frühere Antwort werten |
 | `schwierigkeit_start` | ja | 1-5, eigene Schätzung (siehe unten) |
@@ -190,6 +190,7 @@ Die App rechnet beide Terme an mehreren Zufallsstellen aus und vergleicht die We
 - Einheit und Rundung nur verlangen (`einheit_pflicht: ja`, `rundung`), wenn die Aufgabe es ausdrücklich fordert. Lange oder periodische Ergebnisse gelten auch richtig gerundet als richtig.
 - Toleranz großzügig genug für korrekte Zwischenrundungen wählen.
 - Distraktoren bei Ankreuz- und Lückentext-Aufgaben als typische Denkfehler bauen und in `fehlerbilder` benennen.
+- Optionen so schreiben, dass sie in jeder Reihenfolge stimmen (kein "alle oben genannten", kein "keine der anderen"), weil die App sie später gemischt zeigt.
 - Mengen und Intervalle als Multiple Choice oder als `offen_text` mit Selbstvergleich erfassen.
 
 ## Varianten und Vorlagen

@@ -445,6 +445,94 @@ void main() {
     });
   });
 
+  group('Fehlerbilder', () {
+    Map<String, dynamic> mit(String format, Map<String, dynamic> antwort, Map<String, dynamic> fb) {
+      final a = gueltigeAufgabe('a1');
+      final i = (a['items'] as List).first as Map<String, dynamic>;
+      i['antwortformat'] = format;
+      i['antwort'] = antwort;
+      i['fehlerbilder'] = fb;
+      return a;
+    }
+
+    final mc = {
+      'optionen': ['a', 'b', 'c', 'd', 'e'],
+      'richtig': 1,
+    };
+    final luecke = {
+      'satz': '{1} {2}',
+      'luecke_1': ['a', 'b', 'c'],
+      'luecke_2': ['d', 'e', 'f'],
+      'richtig': [0, 1],
+    };
+    final zuordnung = {
+      'elemente': ['1', '2', '3', '4'],
+      'optionen': ['a', 'b', 'c', 'd', 'e', 'f'],
+      'richtig': {'0': 'A', '1': 'B', '2': 'C', '3': 'D'},
+    };
+    final zahl = {'wert': 8, 'toleranz': 0, 'einheit': null, 'einheit_pflicht': 'nein', 'rundung': null};
+
+    List<Befund> befunde(Map<String, dynamic> a) =>
+        pruefeAufgabe(a).where((b) => b.pfad == 'items/0/fehlerbilder').toList();
+
+    test('gültige Schlüssel je Format haben keine Befunde', () {
+      expect(befunde(mit('mc_1aus5', mc, {'2': 'vorzeichenfehler'})), isEmpty);
+      expect(befunde(mit('lueckentext', luecke, {'1:2': 'x', '2:0': 'y'})), isEmpty);
+      expect(befunde(mit('zuordnung', zuordnung, {'E': 'x'})), isEmpty);
+      expect(befunde(mit('offen_zahl', zahl, {'16': 'x', '6,25': 'y'})), isEmpty);
+      expect(befunde(mit('offen_term', {'term': '2*x'}, {'x+2': 'plus_statt_mal'})), isEmpty);
+    });
+
+    test('Fehlerbild an einer richtigen Antwort ist ein Fehler', () {
+      for (final a in [
+        mit('mc_1aus5', mc, {'1': 'x'}),
+        mit('lueckentext', luecke, {'1:0': 'x'}),
+        mit('zuordnung', zuordnung, {'A': 'x'}),
+        mit('offen_zahl', zahl, {'8': 'x'}),
+        mit('offen_term', {'term': '2*x'}, {'x*2': 'x'}),
+      ]) {
+        expect(befunde(a).single.istFehler, isTrue, reason: '${a['items']}');
+      }
+    });
+
+    test('Name muss dem Schema folgen', () {
+      expect(befunde(mit('mc_1aus5', mc, {'2': 'Vorzeichen Fehler'})).single.istFehler, isTrue);
+    });
+
+    test('unpassender Schlüssel ist nur ein Hinweis', () {
+      expect(befunde(mit('mc_1aus5', mc, {'9': 'x'})).single.istFehler, isFalse);
+      expect(befunde(mit('offen_text', {'musterloesung': 'a'}, {'1': 'x'})).single.istFehler, isFalse);
+    });
+
+    Item ladeItem(Map<String, dynamic> a) => ladeZurVorschau(a).aufgabe!.items.first;
+    const pruefer = AnswerChecker();
+
+    test('Prüfung liefert das Fehlerbild je Format', () {
+      expect(pruefer.check(ladeItem(mit('mc_1aus5', mc, {'2': 'x'})), 2).fehlerbild, 'x');
+      final mc2 = {
+        'optionen': ['a', 'b', 'c', 'd', 'e'],
+        'richtig': [0, 1],
+      };
+      expect(pruefer.check(ladeItem(mit('mc_2aus5', mc2, {'3': 'x'})), <int>{0, 3}).fehlerbild, 'x');
+      expect(pruefer.check(ladeItem(mit('lueckentext', luecke, {'2:2': 'x'})), <int?>[0, 2]).fehlerbild, 'x');
+      expect(pruefer.check(ladeItem(mit('zuordnung', zuordnung, {'E': 'x'})), <int, String>{0: 'E', 1: 'B', 2: 'C', 3: 'D'}).fehlerbild, 'x');
+      expect(pruefer.check(ladeItem(mit('offen_zahl', zahl, {'16': 'x'})), '16').fehlerbild, 'x');
+      expect(pruefer.check(ladeItem(mit('offen_term', {'term': '2*x'}, {'x+2': 'x'})), '2+x').fehlerbild, 'x');
+      final paar = {
+        'vorlage': '{x} {y}',
+        'art': 'zahl',
+        'wert': [2, 3],
+        'toleranz': 0,
+      };
+      expect(pruefer.check(ladeItem(mit('halboffen', paar, {'4; 5': 'x'})), <String>['4', '5']).fehlerbild, 'x');
+    });
+
+    test('richtige Antworten bleiben richtig, andere falsche ohne Fehlerbild', () {
+      expect(pruefer.check(ladeItem(mit('mc_1aus5', mc, {'2': 'x'})), 1).richtig, isTrue);
+      expect(pruefer.check(ladeItem(mit('offen_zahl', zahl, {'16': 'x'})), '7').fehlerbild, isNull);
+    });
+  });
+
   test('alle Felder der Feldliste sind abgedeckt', () {
     final aufgaben = (jsonDecode(startbestand.readAsStringSync()) as Map<String, dynamic>)['aufgaben'] as List;
     final bekannt = {for (final f in aufgabeFelder) f.key, 'items', 'verwendung'};

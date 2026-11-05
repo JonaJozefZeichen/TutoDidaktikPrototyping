@@ -514,9 +514,9 @@ class _EditorSeiteState extends State<EditorSeite> {
       ),
       FeldArt.formular => JsonFeld(
         wert: wert,
-        hint: def.key == 'fehlerbilder' ? '{ "16": "faktor_statt_anzahl" }' : '[ ]',
+        hint: '[ ]',
         onGueltig: (ok) => setState(() => ok ? _jsonUngueltig.remove(pfad) : _jsonUngueltig.add(pfad)),
-        onChanged: (v) => setze(v ?? (def.key == 'fehlerbilder' ? <String, dynamic>{} : <dynamic>[])),
+        onChanged: (v) => setze(v ?? <dynamic>[]),
       ),
     };
     return FeldRahmen(label: def.label, pfad: pfad, pflicht: def.pflicht, hilfe: def.key, child: eingabe);
@@ -658,13 +658,14 @@ class _EditorSeiteState extends State<EditorSeite> {
     if (neu == null || neu == item['antwortformat']) return;
     final ok = await _bestaetige(
       'Antwortformat wechseln?',
-      'Die bisherige Antwort wird durch ein leeres Formular für $neu ersetzt. Bis zum Speichern lässt sich das rückgängig machen.',
+      'Die bisherige Antwort und ihre Fehlerbilder werden durch ein leeres Formular für $neu ersetzt. Bis zum Speichern lässt sich das rückgängig machen.',
       'Wechseln',
     );
     if (!ok) return;
     setState(() {
       item['antwortformat'] = neu;
       item['antwort'] = leereAntwort('$neu');
+      item['fehlerbilder'] = <String, dynamic>{};
       _ladeZaehler++;
     });
   }
@@ -798,9 +799,17 @@ class _EditorSeiteState extends State<EditorSeite> {
                   antwort: item['antwort'] is Map<String, dynamic>
                       ? item['antwort'] as Map<String, dynamic>
                       : (item['antwort'] = <String, dynamic>{}),
+                  fehlerbilder: item['fehlerbilder'] is Map<String, dynamic>
+                      ? item['fehlerbilder'] as Map<String, dynamic>
+                      : const {},
+                  vorschlaege: widget.stamm.fehlerbilder,
                   onAendern: (f) => setState(() => f(item['antwort'] as Map<String, dynamic>)),
-                  onJsonGueltig: (ok) =>
-                      setState(() => ok ? _jsonUngueltig.remove('$pfad/antwort') : _jsonUngueltig.add('$pfad/antwort')),
+                  onFehlerbilder: (f) => setState(() {
+                    if (item['fehlerbilder'] is! Map<String, dynamic>) item['fehlerbilder'] = <String, dynamic>{};
+                    f(item['fehlerbilder'] as Map<String, dynamic>);
+                  }),
+                  onJsonGueltig: (ok) => setState(() => ok ? _jsonUngueltig.remove('$pfad/antwort') : _jsonUngueltig.add('$pfad/antwort')),
+                  onNeuAufbauen: () => setState(() => _ladeZaehler++),
                 ),
               ),
             ],
@@ -821,6 +830,15 @@ class _EditorSeiteState extends State<EditorSeite> {
                     item['hilfen'] = l;
                   }),
                 ),
+              ),
+            ],
+            // Fehlerbilder stehen direkt bei den falschen Antworten; hier nur Befunde und Hilfe.
+            'fehlerbilder' => [
+              FeldRahmen(
+                label: 'Fehlerbilder',
+                pfad: '$pfad/fehlerbilder',
+                hilfe: 'fehlerbilder',
+                child: Text('Stehen oben bei den falschen Antworten.', style: Theme.of(context).textTheme.bodySmall),
               ),
             ],
             'halbpunkt_regel' => [
