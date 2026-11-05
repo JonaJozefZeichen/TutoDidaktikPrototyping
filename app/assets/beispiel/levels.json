@@ -1,0 +1,87 @@
+{
+ "lernwelten": [],
+ "levels": [
+  {
+   "level_id": "AG5-01",
+   "titel": "Zahlenmengen unterscheiden",
+   "themenbereich": "AG",
+   "lernwelt": 5,
+   "kompetenzen": [
+    "ag-zahlenmengen-unterscheiden"
+   ]
+  },
+  {
+   "level_id": "AG5-02",
+   "titel": "Intervalle darstellen",
+   "themenbereich": "AG",
+   "lernwelt": 5,
+   "kompetenzen": [
+    "ag-intervalle-darstellen"
+   ]
+  },
+  {
+   "level_id": "AG5-03",
+   "titel": "Betrag interpretieren",
+   "themenbereich": "AG",
+   "lernwelt": 5,
+   "kompetenzen": [
+    "ag-betraege-interpretieren"
+   ]
+  },
+  {
+   "level_id": "AG5-05",
+   "titel": "Zehnerpotenzen und Größenordnungen",
+   "themenbereich": "AG",
+   "lernwelt": 5,
+   "kompetenzen": [
+    "ag-zehnerpotenzen-und-groessenordnungen"
+   ]
+  },
+  {
+   "level_id": "AG5-07",
+   "titel": "Primzahlen und Teilbarkeit",
+   "themenbereich": "AG",
+   "lernwelt": 5,
+   "kompetenzen": [
+    "ag-primzahlen-und-teilbarkeit"
+   ]
+  },
+  {
+   "level_id": "AG5-12",
+   "titel": "Quadratische Gleichungen faktorisieren",
+   "themenbereich": "AG",
+   "lernwelt": 5,
+   "kompetenzen": [
+    "ag-quadratische-gleichungen-faktorisieren"
+   ]
+  },
+  {
+   "level_id": "AG5-21",
+   "titel": "Vektoren darstellen",
+   "themenbereich": "AG",
+   "lernwelt": 5,
+   "kompetenzen": [
+    "ag-vektoren-darstellen"
+   ]
+  },
+  {
+   "level_id": "AN5-05",
+   "titel": "Einheiten von Änderungsraten",
+   "themenbereich": "AN",
+   "lernwelt": 5,
+   "kompetenzen": [
+    "an-einheiten-von-aenderungsraten"
+   ]
+  },
+  {
+   "level_id": "X5-02",
+   "titel": "Weg-Zeit-Diagramm und Geschwindigkeit",
+   "themenbereich": "AN",
+   "lernwelt": 5,
+   "kompetenzen": [
+    "fa-lineare-modelle-interpretieren",
+    "an-einheiten-von-aenderungsraten"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,11 @@
+.DS_Store
+.dart_tool/
+build/
+*.iml
+.idea/
+server/data/
+
+# Vertraulich: Manuels Aufgaben und Lernplan bleiben lokal (öffentliches Repo)
+seed/
+# Die Bilder zeigen Aufgabentexte
+app/test/bilder/

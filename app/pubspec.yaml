@@ -1,0 +1,50 @@
+name: tuto_didaktik
+description: Didaktik-Tool für Tuto. Lokaler Teststand, siehe README im Projektordner.
+publish_to: none
+version: 0.1.0
+environment:
+  sdk: ^3.9.0
+dependencies:
+  flutter:
+    sdk: flutter
+  didaktik_kern:
+    path: ../packages/didaktik_kern
+  file_picker: ^10.0.0
+  flutter_markdown_plus: ^1.0.0
+  http: ^1.2.0
+  phosphor_icons: ^3.0.1
+  shared_preferences: ^2.3.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  didaktik_server:
+    path: ../server
+  shelf: ^1.4.0
+  shelf_router: ^1.1.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/hilfe/
+    - assets/beispiel/
+  fonts:
+    - family: Open Sans
+      fonts:
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 700
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 800
+    - family: IBM Plex Mono
+      fonts:
+        - asset: assets/fonts/IBMPlexMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexMono-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexMono-Bold.ttf
+          weight: 700

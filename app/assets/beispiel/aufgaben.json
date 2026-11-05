@@ -1,0 +1,1111 @@
+{
+ "quelle": "Beispielaufgaben für die Demo",
+ "aufgaben": [
+  {
+   "id": "tuto-ag5-01-a01",
+   "titel": "Zahlenmengen unterscheiden",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-01-A01",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-01"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-01-a01",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-01-a01-i1",
+     "aufgabenstellung": "Welche Zahl ist irrational?",
+     "operator": "ankreuzen",
+     "handlungsbereich": "H2",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-zahlenmengen-unterscheiden",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "mc_1aus6",
+     "antwort": {
+      "optionen": [
+       "7/8",
+       "0,333…",
+       "√9",
+       "√3",
+       "0,75",
+       "−4"
+      ],
+      "richtig": 3
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "√3 ist nicht als Quotient ganzer Zahlen darstellbar."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Lies alle sechs Möglichkeiten und streiche zuerst die, die sicher nicht stimmen.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Irrational heißt: nicht als Bruch zweier ganzer Zahlen schreibbar. Prüfe bei jeder Wurzel, ob unter ihr eine Quadratzahl steht.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "√3 ist nicht als Quotient ganzer Zahlen darstellbar.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 2,
+     "erwartete_sekunden": 90
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "ja"
+  },
+  {
+   "id": "tuto-ag5-01-a02",
+   "titel": "Zahlenmengen unterscheiden",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-01-A02",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-01"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-01-a02",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-01-a02-i1",
+     "aufgabenstellung": "Welche Aussagen über −3 sind richtig?",
+     "operator": "ankreuzen",
+     "handlungsbereich": "H2",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-zahlenmengen-unterscheiden",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "mc_2aus5",
+     "antwort": {
+      "optionen": [
+       "−3 ist eine ganze Zahl.",
+       "−3 ist eine rationale Zahl.",
+       "−3 ist natürlich.",
+       "−3 ist irrational.",
+       "−3 ist größer als 0."
+      ],
+      "richtig": [
+       0,
+       1
+      ]
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "Ganze Zahlen sind auch rationale Zahlen."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Prüfe jede Aussage einzeln, genau zwei stimmen.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Ganze Zahlen sind auch rational. Frag bei jeder Aussage: Ist −3 positiv? Hat −3 Nachkommastellen?",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "Ganze Zahlen sind auch rationale Zahlen.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 3,
+     "erwartete_sekunden": 120
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "ja"
+  },
+  {
+   "id": "tuto-ag5-01-a03",
+   "titel": "Zahlenmengen unterscheiden",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-01-A03",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-01"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-01-a03",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-01-a03-i1",
+     "aufgabenstellung": "Gib die kleinste übliche Zahlenmenge an, die die Zahl 5/2 enthält (Symbol ℕ, ℤ, ℚ oder ℝ).",
+     "operator": "angeben",
+     "handlungsbereich": "H2",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-zahlenmengen-unterscheiden",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "offen_text",
+     "antwort": {
+      "musterloesung": "ℚ",
+      "bewertungskriterium": "Gleichwertige Schreibweisen zählen: ℚ · Q · rationale Zahlen"
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "5/2 ist rational, aber nicht ganzzahlig."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Schreib die Antwort in der Schreibweise auf, die im Unterricht üblich ist.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "5/2 = 2,5 ist keine ganze Zahl, lässt sich aber als Bruch schreiben.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "5/2 ist rational, aber nicht ganzzahlig.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 4,
+     "erwartete_sekunden": 150
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "nein"
+  },
+  {
+   "id": "tuto-ag5-03-a01",
+   "titel": "Betrag interpretieren",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-03-A01",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-03"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-03-a01",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-03-a01-i1",
+     "aufgabenstellung": "Berechne |−8|.",
+     "operator": "berechnen",
+     "handlungsbereich": "H2",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-betraege-interpretieren",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "offen_zahl",
+     "antwort": {
+      "wert": 8,
+      "toleranz": 0,
+      "einheit": null,
+      "einheit_pflicht": "nein",
+      "rundung": null
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "Der Betrag ist der Abstand von 0."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Schreib dir auf, was gegeben ist und was gesucht wird, dann rechne Schritt für Schritt.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Der Betrag ist der Abstand zur 0 und daher nie negativ.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "Der Betrag ist der Abstand von 0.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 2,
+     "erwartete_sekunden": 90
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "ja"
+  },
+  {
+   "id": "tuto-ag5-05-a02",
+   "titel": "Zehnerpotenzen und Größenordnungen",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-05-A02",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-05"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-05-a02",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-05-a02-i1",
+     "aufgabenstellung": "Schreibe 0,00045 als a·10^n mit 1≤a<10.",
+     "operator": "aufstellen",
+     "handlungsbereich": "H1",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-zehnerpotenzen-und-groessenordnungen",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "offen_term",
+     "antwort": {
+      "term": "4.5·10^-4",
+      "akzeptiert": [
+       "4,5·10^-4",
+       "4.5*10^-4",
+       "4,5×10⁻⁴"
+      ]
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "Die Mantisse ist 4,5 und der Exponent −4."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Überleg, welche Größe sich ändert (die Variable) und welche fix bleibt.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Schiebe das Komma, bis genau eine Ziffer ungleich 0 davor steht. Nach rechts verschieben macht den Exponenten negativ.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "Die Mantisse ist 4,5 und der Exponent −4.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 3,
+     "erwartete_sekunden": 120
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "nein"
+  },
+  {
+   "id": "tuto-ag5-12-a01",
+   "titel": "Quadratische Gleichungen faktorisieren",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-12-A01",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-12"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-12-a01",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-12-a01-i1",
+     "aufgabenstellung": "Gib beide Lösungen von x²−5x+6=0 an, aufsteigend mit Semikolon getrennt.",
+     "operator": "angeben",
+     "handlungsbereich": "H2",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-quadratische-gleichungen-faktorisieren",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "halboffen",
+     "antwort": {
+      "vorlage": "x₁ = {x}   x₂ = {y}",
+      "art": "zahl",
+      "wert": [
+       2,
+       3
+      ],
+      "toleranz": 0.001,
+      "einheit": null,
+      "einheit_pflicht": "nein",
+      "rundung": null,
+      "reihenfolge_egal": "ja"
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "(x−2)(x−3)=0."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Überleg dir zuerst, welche zwei Zahlen gesucht sind, und trag sie in die richtigen Felder ein.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Suche zwei Zahlen, deren Produkt 6 und deren Summe 5 ist.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "(x−2)(x−3)=0.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 2,
+     "erwartete_sekunden": 90
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "ja"
+  },
+  {
+   "id": "tuto-ag5-21-a01",
+   "titel": "Vektoren darstellen",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-21-A01",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-21"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-21-a01",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-21-a01-i1",
+     "aufgabenstellung": "Zeichne den Verschiebungsvektor von A(1|2) nach B(4|6) als Pfeil.",
+     "operator": "einzeichnen",
+     "handlungsbereich": "H1",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-vektoren-darstellen",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "konstruktion",
+     "antwort": {
+      "zeichenflaeche": "koordinatensystem",
+      "bereich": [
+       0,
+       6,
+       0,
+       7
+      ],
+      "ziel": "vektor",
+      "loesung": {
+       "start": [
+        1,
+        2
+       ],
+       "end": [
+        4,
+        6
+       ],
+       "coordinate_tolerance": 0.1
+      },
+      "toleranz": 0.1,
+      "musterloesung": "Pfeil von (1|2) nach (4|6)"
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "Der Pfeil hat die Komponenten (3|4)."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Lies zuerst die Koordinaten ab und markiere Anfangs- und Endpunkt.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Rechne zuerst B − A, dann weißt du, wie weit der Pfeil nach rechts und nach oben geht.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "Der Pfeil hat die Komponenten (3|4).",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 2,
+     "erwartete_sekunden": 90
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "ja"
+  },
+  {
+   "id": "tuto-an5-05-a02",
+   "titel": "Einheiten von Änderungsraten",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AN5-05-A02",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AN5-05"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-an5-05-a02",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-an5-05-a02-i1",
+     "aufgabenstellung": "Ordne jedem Quotienten die richtige Maßeinheit zu.",
+     "operator": "zuordnen",
+     "handlungsbereich": "H2",
+     "inhaltsbereich": "AN",
+     "kompetenz": "an-einheiten-von-aenderungsraten",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "zuordnung",
+     "antwort": {
+      "elemente": [
+       "Wegänderung / Zeitänderung",
+       "Kostenänderung / Stückzahländerung",
+       "Wasseränderung / Zeitänderung",
+       "Temperaturänderung / Zeitänderung"
+      ],
+      "optionen": [
+       "km/h",
+       "€/Stück",
+       "L/min",
+       "°C/h",
+       "km²",
+       "€·h"
+      ],
+      "richtig": {
+       "0": "A",
+       "1": "B",
+       "2": "C",
+       "3": "D"
+      }
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "Bei einer Änderungsrate wird die Einheit des Zählers durch die Einheit des Nenners geteilt."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Beginne mit der Zuordnung, bei der du dir am sichersten bist.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Schreib zu jedem Quotienten die Einheit von Zähler und Nenner als Bruch.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "Bei einer Änderungsrate wird die Einheit des Zählers durch die Einheit des Nenners geteilt.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 3,
+     "erwartete_sekunden": 120
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "ja"
+  },
+  {
+   "id": "tuto-x5-02-a04",
+   "titel": "Weg-Zeit-Diagramm und Geschwindigkeit",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "X5-02-A04",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "X5-02"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "alltag",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-x5-02-a04",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-x5-02-a04-i1",
+     "aufgabenstellung": "Ergänze den Satz.",
+     "operator": "ergaenzen",
+     "handlungsbereich": "H2",
+     "inhaltsbereich": "AN",
+     "kompetenz": "an-einheiten-von-aenderungsraten",
+     "kompetenz_sekundaer": [
+      "fa-lineare-modelle-interpretieren"
+     ],
+     "grundkompetenz": null,
+     "antwortformat": "lueckentext",
+     "antwort": {
+      "satz": "Die Weg-Zeit-Funktion s(t)=12t besitzt die konstante Steigung {1}. In der Sachlage bedeutet das eine Geschwindigkeit von {2}.",
+      "luecke_1": [
+       "12",
+       "5",
+       "60"
+      ],
+      "luecke_2": [
+       "12 m/s",
+       "12 m",
+       "12 s"
+      ],
+      "richtig": [
+       0,
+       0
+      ]
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "Die Steigung 12 hat die Einheit m/s."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Lies den ganzen Satz und setze probeweise jede Möglichkeit ein.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Lies die Steigung aus s(t) = 12t ab und überlege, welche Größe Meter pro Sekunde beschreibt.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "Die Steigung 12 hat die Einheit m/s.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 4,
+     "erwartete_sekunden": 215
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "ja"
+  },
+  {
+   "id": "tuto-ag5-03-a02",
+   "titel": "Betrag interpretieren",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-03-A02",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-03"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-03-a02",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-03-a02-i1",
+     "aufgabenstellung": "Wie groß ist der Abstand zwischen −3 und 5 auf der Zahlengeraden?",
+     "operator": "berechnen",
+     "handlungsbereich": "H2",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-betraege-interpretieren",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "offen_zahl",
+     "antwort": {
+      "wert": 8,
+      "toleranz": 0,
+      "einheit": null,
+      "einheit_pflicht": "nein",
+      "rundung": null
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "Der Abstand ist |5−(−3)| = 8."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Schreib dir auf, was gegeben ist und was gesucht wird, dann rechne Schritt für Schritt.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Zähle auf der Zahlengeraden von −3 bis 0 und dann von 0 bis 5.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "Der Abstand ist |5−(−3)| = 8.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 3,
+     "erwartete_sekunden": 120
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "ja"
+  },
+  {
+   "id": "tuto-ag5-02-a01",
+   "titel": "Intervalle darstellen",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-02-A01",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-02"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-02-a01",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-02-a01-i1",
+     "aufgabenstellung": "Welche Menge wird durch [−2;3) beschrieben?",
+     "operator": "ankreuzen",
+     "handlungsbereich": "H2",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-intervalle-darstellen",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "mc_1aus6",
+     "antwort": {
+      "optionen": [
+       "−2 ≤ x ≤ 3",
+       "x ≤ −2 oder x > 3",
+       "−3 ≤ x < 2",
+       "−2 ≤ x < 3",
+       "−2 < x ≤ 3",
+       "−2 < x < 3"
+      ],
+      "richtig": 3
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "Die linke Grenze gehört dazu, die rechte nicht."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Lies alle sechs Möglichkeiten und streiche zuerst die, die sicher nicht stimmen.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Eckige Klammer: Randzahl gehört dazu. Runde Klammer: Randzahl gehört nicht dazu.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "Die linke Grenze gehört dazu, die rechte nicht.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 2,
+     "erwartete_sekunden": 90
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "ja"
+  },
+  {
+   "id": "tuto-ag5-07-a03",
+   "titel": "Primzahlen und Teilbarkeit",
+   "herkunft": "team",
+   "externe_referenzen": [
+    {
+     "quelle": "manuel-2026-11-02",
+     "id": "AG5-07-A03",
+     "termin": null,
+     "hinweis": "Manuels Aufgabenbank 5. Klasse, umgewandelt"
+    }
+   ],
+   "level": [
+    "AG5-07"
+   ],
+   "matura_thema": null,
+   "zusammenstellung": "einzel",
+   "matura_typ": null,
+   "matura_niveau": "einstieg",
+   "schultyp": "AHS",
+   "schulstufe": 9,
+   "kontext": "innermathematisch",
+   "stamm": "",
+   "medien": [],
+   "technologie": "ohne",
+   "parametrisierbar": "nein",
+   "parameter": [],
+   "variantengruppe": "tuto-ag5-07-a03",
+   "teilaufgaben": [],
+   "items": [
+    {
+     "item_id": "tuto-ag5-07-a03-i1",
+     "aufgabenstellung": "Gib die Primfaktorzerlegung von 60 an (Produkt von Primzahlpotenzen).",
+     "operator": "aufstellen",
+     "handlungsbereich": "H1",
+     "inhaltsbereich": "AG",
+     "kompetenz": "ag-primzahlen-und-teilbarkeit",
+     "kompetenz_sekundaer": [],
+     "grundkompetenz": null,
+     "antwortformat": "offen_term",
+     "antwort": {
+      "term": "2^2·3·5",
+      "akzeptiert": [
+       "2^2·3·5",
+       "2²·3·5",
+       "2*2*3*5"
+      ]
+     },
+     "punkteschema": "0/1",
+     "halbpunkt_regel": null,
+     "loesungsweg": [
+      "60=4·15=2²·3·5."
+     ],
+     "fehlerbilder": {},
+     "hilfen": [
+      {
+       "stufe": 1,
+       "text": "Überleg, welche Größe sich ändert (die Variable) und welche fix bleibt.",
+       "freigabe": {
+        "nach_sekunden": 15
+       }
+      },
+      {
+       "stufe": 2,
+       "text": "Teile 60 immer wieder durch die kleinste mögliche Primzahl.",
+       "freigabe": {
+        "nach_sekunden": 40
+       },
+       "entwurf": "ki"
+      },
+      {
+       "stufe": 3,
+       "text": "60=4·15=2²·3·5.",
+       "freigabe": {
+        "nach_fehlversuchen": 1
+       }
+      }
+     ],
+     "abhaengig_von": null,
+     "folgefehler": null,
+     "schwierigkeit_start": 4,
+     "erwartete_sekunden": 150
+    }
+   ],
+   "status": "live",
+   "lernpfad_geeignet": "ja",
+   "unterwegs": "nein"
+  }
+ ]
+}

@@ -1,0 +1,9 @@
+name: didaktik_kern
+description: Regeln, Feldliste und Prüfung des Didaktik-Tools. Reines Dart, läuft im Server und im Browser.
+publish_to: none
+version: 0.1.0
+environment:
+  sdk: ^3.9.0
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
