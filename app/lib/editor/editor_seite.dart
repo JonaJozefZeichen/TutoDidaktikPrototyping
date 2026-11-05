@@ -46,6 +46,9 @@ class _EditorSeiteState extends State<EditorSeite> {
   int _ladeZaehler = 0;
   final _offeneItems = <int>{0};
   final _jsonUngueltig = <String>{};
+
+  /// Antworten aus anderen Formaten, pro Item und Formatfamilie, bis zum nächsten Laden.
+  final _antwortMerk = <String, Map<String, Map<String, dynamic>>>{};
   final _ziele = <String, GlobalKey>{};
 
   @override
@@ -67,7 +70,10 @@ class _EditorSeiteState extends State<EditorSeite> {
       _gespeichert = jsonEncode(_inhalt);
       _ladeFehler = null;
       _jsonUngueltig.clear();
-      if (neuAufbauen) _ladeZaehler++;
+      if (neuAufbauen) {
+        _ladeZaehler++;
+        _antwortMerk.clear();
+      }
     });
   }
 
@@ -654,18 +660,26 @@ class _EditorSeiteState extends State<EditorSeite> {
     });
   }
 
-  Future<void> _formatWechsel(Map<String, dynamic> item, Object? neu) async {
-    if (neu == null || neu == item['antwortformat']) return;
-    final ok = await _bestaetige(
-      'Antwortformat wechseln?',
-      'Die bisherige Antwort und ihre Fehlerbilder werden durch ein leeres Formular für $neu ersetzt. Bis zum Speichern lässt sich das rückgängig machen.',
-      'Wechseln',
-    );
-    if (!ok) return;
+  /// Antworten bleiben beim Wechsel stehen. Zwischen Ankreuzformaten ändert sich
+  /// nichts; passt die Zahl nicht, meldet das die Prüfung. Zu anderen Formaten
+  /// wandert die Antwort in einen Merkspeicher, damit sie beim Zurückwechseln
+  /// wieder da ist.
+  void _formatWechsel(Map<String, dynamic> item, Object? neu) {
+    final alt = item['antwortformat'];
+    if (neu is! String || neu == alt) return;
+    String familie(Object? f) => ankreuzFormate.containsKey(f) ? 'ankreuzen' : '$f';
+    final antwort = item['antwort'] is Map<String, dynamic> ? item['antwort'] as Map<String, dynamic> : <String, dynamic>{};
     setState(() {
+      if (familie(alt) == familie(neu)) {
+        item['antwort'] = antwortFuerFormat(neu, antwort);
+      } else {
+        final merk = _antwortMerk.putIfAbsent('${item['item_id']}', () => {});
+        merk[familie(alt)] = {'antwort': antwort, 'fehlerbilder': item['fehlerbilder'] ?? <String, dynamic>{}};
+        final frueher = merk[familie(neu)];
+        item['antwort'] = antwortFuerFormat(neu, frueher?['antwort'] ?? antwort);
+        item['fehlerbilder'] = frueher?['fehlerbilder'] ?? <String, dynamic>{};
+      }
       item['antwortformat'] = neu;
-      item['antwort'] = leereAntwort('$neu');
-      item['fehlerbilder'] = <String, dynamic>{};
       _ladeZaehler++;
     });
   }

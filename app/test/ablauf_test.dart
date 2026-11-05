@@ -5,6 +5,7 @@ import 'package:didaktik_kern/didaktik_kern.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tuto_didaktik/api.dart';
+import 'package:tuto_didaktik/editor/bausteine.dart';
 import 'package:tuto_didaktik/main.dart';
 
 import 'hilfsmittel.dart';
@@ -189,15 +190,128 @@ void main() {
   group('Antwort-Slots', () {
     Map<String, dynamic> antwortVon(Eintrag e) => (e.aktuell.inhalt['items'] as List).first as Map<String, dynamic>;
 
-    testWidgets('Öffnen ändert nichts, richtige Antwort steht zuerst', (t) async {
+    const a01 = id; // mc_1aus6, richtig ist Index 3 (√3)
+    const a02 = 'tuto-ag5-01-a02'; // mc_2aus5, richtig sind 0 und 1
+    final fehlerbildFeld = find.widgetWithText(TextField, 'Fehlerbild, z. B. vorzeichenfehler');
+
+    Future<void> zeigeAntworten(WidgetTester t) async {
+      await t.scrollUntilVisible(find.text('Antwort 1'), 300, scrollable: find.byType(Scrollable).last);
+      await t.pumpAndSettle();
+    }
+
+    Future<void> wechsleFormat(WidgetTester t, String von, String nach) async {
+      final feld = find.descendant(of: find.byType(WahlFeld), matching: find.text(von));
+      await t.ensureVisible(feld.first);
+      await t.pumpAndSettle();
+      await t.tap(feld.first);
+      await t.pumpAndSettle();
+      await t.tap(find.text(nach).last);
+      await t.pumpAndSettle();
+    }
+
+    Future<void> haken(WidgetTester t, int i) async {
+      await t.ensureVisible(find.byKey(ValueKey('richtig-$i')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(ValueKey('richtig-$i')));
+      await t.pumpAndSettle();
+    }
+
+    testWidgets('Öffnen ändert nichts, falsche Antworten haben ein Fehlerbild-Feld, die richtige nicht', (t) async {
       await starte(t, testApi());
-      await oeffneAufgabe(t, id);
+      await oeffneAufgabe(t, a01);
+      await zeigeAntworten(t);
       expect(find.text('Nicht gespeichert'), findsNothing);
-      await t.scrollUntilVisible(find.text('Richtige Antwort'), 300, scrollable: find.byType(Scrollable).last);
-      final richtig = t.getTopLeft(find.text('Richtige Antwort'));
-      final falsch = t.getTopLeft(find.text('Falsche Antwort 1'));
-      expect(richtig.dy, lessThan(falsch.dy));
-      expect(find.text('Falsche Antwort 5'), findsOneWidget); // mc_1aus6
+      expect(find.text('Antwort 6'), findsOneWidget);
+      expect(fehlerbildFeld, findsNWidgets(5));
+      expect(t.widget<Checkbox>(find.byKey(const ValueKey('richtig-3'))).value, isTrue);
+      expect(t.widget<Checkbox>(find.byKey(const ValueKey('richtig-0'))).value, isFalse);
+    });
+
+    testWidgets('2 aus 5 auf 1 aus 6 behält alles, meldet zu viele und sperrt das Approval', (t) async {
+      final api = testApi();
+      await starte(t, api);
+      await oeffneAufgabe(t, a02);
+      await zeigeAntworten(t);
+      final vorher = ((antwortVon((await api.aufgabe(a02)).eintrag)['antwort'] as Map)['optionen'] as List).cast<String>();
+      await wechsleFormat(t, 'mc_2aus5', 'mc_1aus6');
+      for (final o in vorher) {
+        expect(find.widgetWithText(TextField, o), findsOneWidget, reason: o);
+      }
+      expect(find.textContaining('Zu viele richtige Antworten: 2 markiert'), findsWidgets);
+      expect(find.textContaining('Antwort 6 ist leer'), findsWidgets);
+      expect(t.widget<Checkbox>(find.byKey(const ValueKey('richtig-0'))).value, isTrue);
+      expect(t.widget<Checkbox>(find.byKey(const ValueKey('richtig-1'))).value, isTrue);
+      await t.tap(find.byKey(const ValueKey('speichern')));
+      await t.pumpAndSettle();
+      expect(knopf(t, 'approval').onPressed, isNull);
+      expect((await api.aufgabe(a02)).eintrag.aktuell.nr, 2); // speichern geht, freigeben nicht
+
+      // Markierung entfernen und den leeren Slot füllen hebt die Sperre auf.
+      await haken(t, 1);
+      await t.enterText(find.widgetWithText(TextField, 'Text eingeben').last, 'Neue Antwort');
+      await t.pumpAndSettle();
+      expect(find.textContaining('Zu viele richtige'), findsNothing);
+      expect(find.text('Keine Fehler'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('speichern')));
+      await t.pumpAndSettle();
+      expect(knopf(t, 'approval').onPressed, isNotNull);
+      final item = antwortVon((await api.aufgabe(a02)).eintrag);
+      expect((item['antwort'] as Map)['richtig'], 0);
+      expect((item['antwort'] as Map)['optionen'], hasLength(6));
+    });
+
+    testWidgets('1 aus 6 auf 2 aus 5 meldet zu wenige und zu viele, Entfernen rückt alles nach', (t) async {
+      final api = testApi();
+      await starte(t, api);
+      await oeffneAufgabe(t, a01);
+      await zeigeAntworten(t);
+      // Fehlerbild an Index 4 (0,75), danach Index 0 entfernen: wird zu Index 3.
+      await t.enterText(fehlerbildFeld.at(3), 'zahl_x');
+      await t.pumpAndSettle();
+      await wechsleFormat(t, 'mc_1aus6', 'mc_2aus5');
+      expect(find.textContaining('Zu wenige richtige Antworten: 1 markiert'), findsWidgets);
+      expect(find.textContaining('Zu viele Antworten: 6'), findsWidgets);
+      await t.ensureVisible(find.byTooltip('Antwort entfernen').first);
+      await t.pumpAndSettle();
+      await t.tap(find.byTooltip('Antwort entfernen').first);
+      await t.pumpAndSettle();
+      expect(find.textContaining('Zu viele Antworten'), findsNothing);
+      await haken(t, 0);
+      expect(find.text('Keine Fehler'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('speichern')));
+      await t.pumpAndSettle();
+      final item = antwortVon((await api.aufgabe(a01)).eintrag);
+      expect((item['antwort'] as Map)['richtig'], [0, 2]); // √3 war Index 3, jetzt 2
+      expect(item['fehlerbilder'], {'3': 'zahl_x'});
+    });
+
+    testWidgets('Häkchen blendet das Fehlerbild-Feld aus, löscht den Wert und springt bei 1 aus', (t) async {
+      final api = testApi();
+      await starte(t, api);
+      await oeffneAufgabe(t, a01);
+      await zeigeAntworten(t);
+      await t.enterText(fehlerbildFeld.first, 'x');
+      await t.pumpAndSettle();
+      await haken(t, 0);
+      expect(fehlerbildFeld, findsNWidgets(5));
+      expect(t.widget<Checkbox>(find.byKey(const ValueKey('richtig-3'))).value, isFalse);
+      await t.tap(find.byKey(const ValueKey('speichern')));
+      await t.pumpAndSettle();
+      final item = antwortVon((await api.aufgabe(a01)).eintrag);
+      expect((item['antwort'] as Map)['richtig'], 0);
+      expect(item['fehlerbilder'], isEmpty);
+    });
+
+    testWidgets('Wechsel auf offene Zahl und zurück bringt Antworten und Fehlerbilder wieder', (t) async {
+      await starte(t, testApi());
+      await oeffneAufgabe(t, a01);
+      await zeigeAntworten(t);
+      await wechsleFormat(t, 'mc_1aus6', 'offen_zahl');
+      expect(find.text('Antwort 1'), findsNothing);
+      expect(find.text('Richtiger Wert'), findsOneWidget);
+      await wechsleFormat(t, 'offen_zahl', 'mc_1aus6');
+      expect(find.widgetWithText(TextField, '7/8'), findsOneWidget);
+      expect(t.widget<Checkbox>(find.byKey(const ValueKey('richtig-3'))).value, isTrue);
       expect(find.text('Nicht gespeichert'), findsNothing);
     });
 
@@ -205,7 +319,7 @@ void main() {
       final api = testApi();
       await starte(t, api);
       await oeffneAufgabe(t, id);
-      await t.scrollUntilVisible(find.text('Falsche Antwort 1'), 300, scrollable: find.byType(Scrollable).last);
+      await zeigeAntworten(t);
       // Erste falsche Option von a01 ist 7/8 (Index 0), richtig ist Index 3.
       await t.enterText(find.widgetWithText(TextField, 'Fehlerbild, z. B. vorzeichenfehler').first, 'bruch_ist_irrational');
       await t.pumpAndSettle();
@@ -217,22 +331,6 @@ void main() {
       await t.tap(find.byKey(const ValueKey('antwort-testen')));
       await t.pumpAndSettle();
       expect(find.textContaining('Fehlerbild: bruch_ist_irrational'), findsOneWidget);
-    });
-
-    testWidgets('"Das ist richtig" tauscht die Rollen und löscht das Fehlerbild', (t) async {
-      final api = testApi();
-      await starte(t, api);
-      await oeffneAufgabe(t, id);
-      await t.scrollUntilVisible(find.text('Falsche Antwort 1'), 300, scrollable: find.byType(Scrollable).last);
-      await t.enterText(find.widgetWithText(TextField, 'Fehlerbild, z. B. vorzeichenfehler').first, 'x');
-      await t.pumpAndSettle();
-      await t.tap(find.text('Das ist richtig').first);
-      await t.pumpAndSettle();
-      await t.tap(find.byKey(const ValueKey('speichern')));
-      await t.pumpAndSettle();
-      final item = antwortVon((await api.aufgabe(id)).eintrag);
-      expect((item['antwort'] as Map)['richtig'], 0);
-      expect(item['fehlerbilder'], isEmpty);
     });
 
     testWidgets('freie Zeilen: Zahl mit Komma, neue Zeile erscheint, Fehlerbild an richtigem Wert wird gemeldet', (t) async {

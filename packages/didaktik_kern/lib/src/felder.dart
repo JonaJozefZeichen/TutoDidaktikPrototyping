@@ -202,6 +202,49 @@ Map<String, dynamic> leereAntwort(String format) => switch (format) {
   _ => <String, dynamic>{},
 };
 
+/// Ankreuzformate: Anzahl der Antworten und der richtigen.
+const ankreuzFormate = <String, (int antworten, int richtige)>{
+  'mc_1aus5': (5, 1),
+  'mc_1aus6': (6, 1),
+  'mc_2aus5': (5, 2),
+};
+
+/// `richtig` als Liste, egal ob als Zahl oder Liste gespeichert.
+List<int> richtigeIndizes(Object? richtig) => switch (richtig) {
+  final int i => [i],
+  final List<dynamic> l => l.whereType<int>().toList(),
+  _ => const [],
+};
+
+/// Eine Markierung bei einem 1-aus-Format als Zahl, wie die App sie liest; sonst
+/// als Liste. So bleibt auch ein unpassender Zwischenstand erhalten.
+Object richtigFuerFormat(String format, List<int> indizes) {
+  final sortiert = [...indizes]..sort();
+  return ankreuzFormate[format]?.$2 == 1 && sortiert.length == 1 ? sortiert.first : sortiert;
+}
+
+bool _gleicheArt(Object? a, Object? b) =>
+    (a is List && b is List) || (a is Map && b is Map) || (a is num && b is num) || (a is String && b is String);
+
+/// `antwort` beim Wechsel des Antwortformats. Zwischen Ankreuzformaten bleibt
+/// alles stehen (passt die Zahl nicht, meldet das die Prüfung); sonst bleiben
+/// die Felder, die beide Formate kennen und die denselben Typ haben.
+Map<String, dynamic> antwortFuerFormat(String neu, Map<String, dynamic> alt) {
+  final vorlage = leereAntwort(neu);
+  final ankreuz = ankreuzFormate[neu];
+  if (ankreuz != null && alt['optionen'] is List && alt['richtig'] is! Map) {
+    final optionen = [...alt['optionen'] as List];
+    while (optionen.length > ankreuz.$1 && '${optionen.last ?? ''}'.trim().isEmpty) {
+      optionen.removeLast();
+    }
+    return {...alt, 'optionen': optionen, 'richtig': richtigFuerFormat(neu, richtigeIndizes(alt['richtig']))};
+  }
+  return {
+    for (final e in vorlage.entries)
+      e.key: alt[e.key] != null && (e.value == null || _gleicheArt(alt[e.key], e.value)) ? alt[e.key] : e.value,
+  };
+}
+
 /// Leeres Item für den Knopf "Item hinzufügen".
 Map<String, dynamic> leeresItem(String itemId) => {
   'item_id': itemId,

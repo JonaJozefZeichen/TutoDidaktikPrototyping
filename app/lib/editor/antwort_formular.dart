@@ -1,12 +1,13 @@
+import 'package:didaktik_kern/didaktik_kern.dart';
 import 'package:flutter/material.dart';
 
 import 'package:tuto_didaktik/editor/bausteine.dart';
 import 'package:tuto_didaktik/thema.dart';
 
-/// Formular für `antwort` mit Slots: zuerst die richtigen Antworten, danach die
-/// falschen, jede direkt mit ihrem Fehlerbild. Die Slots sortieren nur die
-/// Anzeige; `optionen` und `richtig` bleiben gespeichert wie bisher, und das
-/// Formular ändert nur die Schlüssel, die es zeigt.
+/// Formular für `antwort`: Alle Antworten stehen in fester Reihenfolge da, die
+/// richtigen sind markiert, und nur die falschen haben ein Fehlerbild-Feld. Das
+/// Formular ändert nur die Schlüssel, die es zeigt. Passt die Zahl der
+/// Markierungen nicht zum Format, meldet das die Prüfung.
 class AntwortFormular extends StatelessWidget {
   const AntwortFormular({
     super.key,
@@ -110,38 +111,15 @@ class AntwortFormular extends StatelessWidget {
     ],
   );
 
-  Widget _richtigSlot(String label, String wert, ValueChanged<String> aendern) => _Slot(
-    richtig: true,
-    label: label,
-    kinder: [TextEingabe(wert: wert, onChanged: aendern)],
-  );
-
-  Widget _falschSlot({
-    required String label,
-    required String wert,
-    required ValueChanged<String> aendern,
-    required String schluessel,
-    VoidCallback? machRichtig,
-  }) => _Slot(
-    richtig: false,
-    label: label,
-    aktion: machRichtig == null
-        ? null
-        : TextButton(
-            style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 6)),
-            onPressed: machRichtig,
-            child: const Text('Das ist richtig', style: TextStyle(fontSize: 11.5)),
-          ),
-    kinder: [
-      TextEingabe(wert: wert, onChanged: aendern),
-      const SizedBox(height: 4),
-      FehlerbildEingabe(
-        key: ValueKey('fehlerbild-$schluessel'),
-        wert: '${fehlerbilder[schluessel] ?? ''}',
-        vorschlaege: vorschlaege,
-        onChanged: (n) => _setzeFehlerbild(schluessel, n),
-      ),
-    ],
+  /// Fehlerbild-Feld für eine falsche Antwort.
+  Widget _fehlerbild(String schluessel) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: FehlerbildEingabe(
+      key: ValueKey('fehlerbild-$schluessel'),
+      wert: '${fehlerbilder[schluessel] ?? ''}',
+      vorschlaege: vorschlaege,
+      onChanged: (n) => _setzeFehlerbild(schluessel, n),
+    ),
   );
 
   /// Fehlerbilder, deren Schlüssel zu keinem falschen Slot gehören, bleiben
@@ -168,29 +146,39 @@ class AntwortFormular extends StatelessWidget {
     );
   }
 
-  Widget _mc(int n, {required bool zwei}) {
+  Widget _ankreuzen() {
+    final (n, richtige) = ankreuzFormate[format]!;
     final optionen = _liste('optionen', n);
-    final richtig = a['richtig'];
-    final r = zwei
-        ? [
-            for (final x in richtig is List ? richtig : const [])
-              if (x is int && x >= 0 && x < n) x,
-          ]
-        : [if (richtig is int && richtig >= 0 && richtig < n) richtig];
-    final falsch = [
-      for (var i = 0; i < n; i++)
-        if (!r.contains(i)) i,
-    ];
-    void machRichtig(int i) {
-      onFehlerbilder((f) => f.remove('$i'));
-      onAendern((m) {
-        if (!zwei) {
-          m['richtig'] = i;
-        } else {
-          // Zwei richtige bleiben zwei: getauscht wird mit der zweiten.
-          final neu = r.length < 2 ? [...r, i] : [r[0], i];
-          m['richtig'] = neu..sort();
+    final markiert = richtigeIndizes(a['richtig']);
+
+    void umschalten(int i) {
+      final neu = markiert.contains(i)
+          ? (markiert.where((x) => x != i).toList())
+          // Bei 1-aus springt die Markierung; steht sie nach einem Wechsel auf
+          // mehreren Antworten, muss man erst welche entfernen.
+          : (richtige == 1 && markiert.length <= 1 ? [i] : [...markiert, i]);
+      if (!markiert.contains(i)) onFehlerbilder((f) => f.remove('$i'));
+      onAendern((m) => m['richtig'] = richtigFuerFormat(format, neu));
+    }
+
+    void entfernen(int i) {
+      onFehlerbilder((f) {
+        final neu = <String, dynamic>{};
+        for (final e in f.entries) {
+          final k = int.tryParse(e.key);
+          if (k == i) continue;
+          neu[k != null && k > i ? '${k - 1}' : e.key] = e.value;
         }
+        f
+          ..clear()
+          ..addAll(neu);
+      });
+      onAendern((m) {
+        m['optionen'] = [...optionen]..removeAt(i);
+        m['richtig'] = richtigFuerFormat(format, [
+          for (final x in markiert)
+            if (x != i) x > i ? x - 1 : x,
+        ]);
       });
       onNeuAufbauen();
     }
@@ -198,21 +186,33 @@ class AntwortFormular extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var k = 0; k < r.length; k++)
-          _richtigSlot(
-            r.length > 1 ? 'Richtige Antwort ${k + 1}' : 'Richtige Antwort',
-            '${optionen[r[k]] ?? ''}',
-            (v) => _setzeListe('optionen', r[k], n, v),
+        for (var i = 0; i < optionen.length; i++)
+          _Slot(
+            richtig: markiert.contains(i),
+            label: 'Antwort ${i + 1}',
+            hakenKey: ValueKey('richtig-$i'),
+            onHaken: () => umschalten(i),
+            aktion: optionen.length > n
+                ? IconButton(
+                    tooltip: 'Antwort entfernen',
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.clear, size: 15),
+                    onPressed: () => entfernen(i),
+                  )
+                : null,
+            kinder: [
+              TextEingabe(
+                wert: '${optionen[i] ?? ''}',
+                hint: 'Text eingeben',
+                onChanged: (v) => _setzeListe('optionen', i, optionen.length, v),
+              ),
+              if (!markiert.contains(i)) _fehlerbild('$i'),
+            ],
           ),
-        for (var k = 0; k < falsch.length; k++)
-          _falschSlot(
-            label: 'Falsche Antwort ${k + 1}',
-            wert: '${optionen[falsch[k]] ?? ''}',
-            schluessel: '${falsch[k]}',
-            aendern: (v) => _setzeListe('optionen', falsch[k], n, v),
-            machRichtig: () => machRichtig(falsch[k]),
-          ),
-        _unpassende({for (final i in falsch) '$i'}),
+        _unpassende({
+          for (var i = 0; i < optionen.length; i++)
+            if (!markiert.contains(i)) '$i',
+        }),
       ],
     );
   }
@@ -222,32 +222,34 @@ class AntwortFormular extends StatelessWidget {
     final werte = _liste(key, 3);
     final richtigListe = a['richtig'] is List ? a['richtig'] as List : const [0, 0];
     final r = richtigListe.length >= nr && richtigListe[nr - 1] is int ? richtigListe[nr - 1] as int : 0;
-    final falsch = [
-      for (var i = 0; i < 3; i++)
-        if (i != r) i,
-    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _richtigSlot('Lücke $nr: richtige Antwort', '${werte[r] ?? ''}', (v) => _setzeListe(key, r, 3, v)),
-        for (var k = 0; k < falsch.length; k++)
-          _falschSlot(
-            label: 'Lücke $nr: falsche Antwort ${k + 1}',
-            wert: '${werte[falsch[k]] ?? ''}',
-            schluessel: '$nr:${falsch[k]}',
-            aendern: (v) => _setzeListe(key, falsch[k], 3, v),
-            machRichtig: () {
-              onFehlerbilder((f) => f.remove('$nr:${falsch[k]}'));
+        for (var i = 0; i < werte.length; i++)
+          _Slot(
+            richtig: i == r,
+            label: 'Lücke $nr, Antwort ${i + 1}',
+            hakenKey: ValueKey('richtig-$nr-$i'),
+            onHaken: () {
+              if (i == r) return;
+              onFehlerbilder((f) => f.remove('$nr:$i'));
               onAendern((m) {
                 final neu = [...richtigListe];
                 while (neu.length < 2) {
                   neu.add(0);
                 }
-                neu[nr - 1] = falsch[k];
+                neu[nr - 1] = i;
                 m['richtig'] = neu;
               });
-              onNeuAufbauen();
             },
+            kinder: [
+              TextEingabe(
+                wert: '${werte[i] ?? ''}',
+                hint: 'Text eingeben',
+                onChanged: (v) => _setzeListe(key, i, werte.length, v),
+              ),
+              if (i != r) _fehlerbild('$nr:$i'),
+            ],
           ),
       ],
     );
@@ -259,66 +261,54 @@ class AntwortFormular extends StatelessWidget {
     final optionen = _liste('optionen', 6);
     final richtig = a['richtig'] is Map ? a['richtig'] as Map : const {};
     final belegt = {for (var i = 0; i < 4; i++) richtig['$i']};
-    final frei = [
-      for (var i = 0; i < 6; i++)
-        if (!belegt.contains(buchstaben[i])) i,
-    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _klein('Elemente und ihre richtige Option'),
         for (var i = 0; i < 4; i++)
-          Builder(
-            builder: (_) {
-              final b = richtig['$i'];
-              final idx = b is String ? buchstaben.indexOf(b) : -1;
-              return _Slot(
-                richtig: true,
-                label: 'Richtiges Paar ${i + 1}',
-                kinder: [
-                  TextEingabe(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextEingabe(
                     wert: '${elemente[i] ?? ''}',
-                    hint: 'Element',
+                    hint: 'Element ${i + 1}',
                     onChanged: (v) => _setzeListe('elemente', i, 4, v),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 74,
-                        child: WahlFeld(
-                          wert: b,
-                          werte: buchstaben,
-                          onChanged: (v) {
-                            if (v != null) onFehlerbilder((f) => f.remove('$v'));
-                            onAendern((m) => m['richtig'] = {...richtig, '$i': v});
-                            onNeuAufbauen();
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: idx < 0
-                            ? const SizedBox.shrink()
-                            : TextEingabe(
-                                wert: '${optionen[idx] ?? ''}',
-                                hint: 'Passende Option',
-                                onChanged: (v) => _setzeListe('optionen', idx, 6, v),
-                              ),
-                      ),
-                    ],
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 74,
+                  child: WahlFeld(
+                    wert: richtig['$i'],
+                    werte: buchstaben,
+                    onChanged: (v) {
+                      if (v != null) onFehlerbilder((f) => f.remove('$v'));
+                      onAendern((m) => m['richtig'] = {...richtig, '$i': v});
+                    },
                   ),
-                ],
-              );
-            },
+                ),
+              ],
+            ),
           ),
-        for (final i in frei)
-          _falschSlot(
-            label: 'Falsche Option ${buchstaben[i]}',
-            wert: '${optionen[i] ?? ''}',
-            schluessel: buchstaben[i],
-            aendern: (v) => _setzeListe('optionen', i, 6, v),
+        for (var i = 0; i < 6; i++)
+          _Slot(
+            richtig: belegt.contains(buchstaben[i]),
+            label: 'Option ${buchstaben[i]}${belegt.contains(buchstaben[i]) ? ' (richtig)' : ''}',
+            kinder: [
+              TextEingabe(
+                wert: '${optionen[i] ?? ''}',
+                hint: 'Text eingeben',
+                onChanged: (v) => _setzeListe('optionen', i, 6, v),
+              ),
+              if (!belegt.contains(buchstaben[i])) _fehlerbild(buchstaben[i]),
+            ],
           ),
-        _unpassende({for (final i in frei) buchstaben[i]}),
+        _unpassende({
+          for (final b in buchstaben)
+            if (!belegt.contains(b)) b,
+        }),
       ],
     );
   }
@@ -478,9 +468,7 @@ class AntwortFormular extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (format) {
-      'mc_1aus5' => _mc(5, zwei: false),
-      'mc_1aus6' => _mc(6, zwei: false),
-      'mc_2aus5' => _mc(5, zwei: true),
+      'mc_1aus5' || 'mc_1aus6' || 'mc_2aus5' => _ankreuzen(),
       'lueckentext' => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -531,14 +519,24 @@ class AntwortFormular extends StatelessWidget {
   }
 }
 
-/// Ein Slot: grün für richtig, neutral für falsch, immer gleich aufgebaut.
+/// Eine Antwort: grün für richtig, neutral für falsch, immer gleich aufgebaut.
+/// Mit [onHaken] lässt sie sich als richtig markieren.
 class _Slot extends StatelessWidget {
-  const _Slot({required this.richtig, required this.label, required this.kinder, this.aktion});
+  const _Slot({
+    required this.richtig,
+    required this.label,
+    required this.kinder,
+    this.aktion,
+    this.onHaken,
+    this.hakenKey,
+  });
 
   final bool richtig;
   final String label;
   final List<Widget> kinder;
   final Widget? aktion;
+  final VoidCallback? onHaken;
+  final Key? hakenKey;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -554,8 +552,27 @@ class _Slot extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(richtig ? Icons.check_circle_outline : Icons.highlight_off, size: 15, color: richtig ? const Color(0xFF1B6B32) : grauText),
-            const SizedBox(width: 4),
+            if (onHaken != null)
+              Tooltip(
+                message: richtig ? 'Ist als richtig markiert' : 'Als richtig markieren',
+                child: Checkbox(
+                  key: hakenKey,
+                  value: richtig,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  activeColor: const Color(0xFF1B6B32),
+                  onChanged: (_) => onHaken!(),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  richtig ? Icons.check_circle_outline : Icons.highlight_off,
+                  size: 15,
+                  color: richtig ? const Color(0xFF1B6B32) : grauText,
+                ),
+              ),
             Expanded(
               child: Text(
                 label,

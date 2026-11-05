@@ -30,7 +30,7 @@ void main() {
     await t.tap(find.widgetWithText(InkWell, 'tuto-ag5-01-a01'));
     await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/editor.png'));
-    await t.scrollUntilVisible(find.text('Falsche Antwort 2'), 300, scrollable: find.byType(Scrollable).last);
+    await t.scrollUntilVisible(find.text('Antwort 3'), 300, scrollable: find.byType(Scrollable).last);
     await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/editor_slots.png'));
     await t.tap(find.byTooltip('Im Bauplan nachsehen: titel'));

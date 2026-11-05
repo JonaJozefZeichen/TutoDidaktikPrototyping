@@ -445,6 +445,121 @@ void main() {
     });
   });
 
+  group('Antworten markieren', () {
+    Map<String, dynamic> ankreuzen(String format, List<String> optionen, Object? richtig) {
+      final a = gueltigeAufgabe('a1');
+      final i = (a['items'] as List).first as Map<String, dynamic>;
+      i['antwortformat'] = format;
+      i['antwort'] = {'optionen': optionen, 'richtig': richtig};
+      return a;
+    }
+
+    List<String> antwortFehler(Map<String, dynamic> a) => [
+      for (final b in pruefeAufgabe(a))
+        if (b.pfad == 'items/0/antwort') b.text,
+    ];
+
+    const fuenf = ['a', 'b', 'c', 'd', 'e'];
+    const sechs = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+    test('passende Markierungen haben keine Fehler', () {
+      expect(antwortFehler(ankreuzen('mc_1aus5', fuenf, 1)), isEmpty);
+      expect(antwortFehler(ankreuzen('mc_1aus6', sechs, 1)), isEmpty);
+      expect(antwortFehler(ankreuzen('mc_2aus5', fuenf, [0, 1])), isEmpty);
+    });
+
+    test('zu viele richtige, genau eine verständliche Meldung', () {
+      expect(antwortFehler(ankreuzen('mc_1aus6', sechs, [0, 1])), [
+        'Zu viele richtige Antworten: 2 markiert, dieses Format hat genau 1',
+      ]);
+    });
+
+    test('zu wenige richtige, genau eine verständliche Meldung', () {
+      expect(antwortFehler(ankreuzen('mc_2aus5', fuenf, 2)), [
+        'Zu wenige richtige Antworten: 1 markiert, dieses Format hat genau 2',
+      ]);
+      expect(antwortFehler(ankreuzen('mc_1aus5', fuenf, const [])), [
+        'Zu wenige richtige Antworten: 0 markiert, dieses Format hat genau 1',
+      ]);
+    });
+
+    test('zu viele und leere Antworten', () {
+      expect(antwortFehler(ankreuzen('mc_1aus5', sechs, 1)), ['Zu viele Antworten: 6, dieses Format hat genau 5']);
+      expect(antwortFehler(ankreuzen('mc_1aus6', fuenf, 1)), ['Antwort 6 ist leer']);
+      expect(antwortFehler(ankreuzen('mc_1aus5', ['a', ' ', 'c', 'd', 'e'], 1)), ['Antwort 2 ist leer']);
+    });
+
+    test('solche Fehler sperren das Approval', () {
+      final b = Bestand();
+      b.importiere(
+        jsonEncode({
+          'aufgaben': [ankreuzen('mc_1aus6', sechs, [0, 1])],
+        }),
+        anna,
+      );
+      expect(() => b.approval('a1', 1, anna), throwsA(isA<RegelFehler>().having((e) => e.code, 'code', 'pruefung')));
+    });
+
+    test('Fehlerbild an einer überzähligen Antwort bleibt gültig', () {
+      final a = ankreuzen('mc_1aus5', sechs, 1);
+      ((a['items'] as List).first as Map)['fehlerbilder'] = {'5': 'x'};
+      expect(pruefeAufgabe(a).where((b) => b.pfad.endsWith('fehlerbilder')), isEmpty);
+    });
+
+    test('Lückentext und Zuordnung melden Leeres verständlich', () {
+      final a = gueltigeAufgabe('a1');
+      final i = (a['items'] as List).first as Map<String, dynamic>;
+      i['antwortformat'] = 'lueckentext';
+      i['antwort'] = leereAntwort('lueckentext');
+      expect(antwortFehler(a), hasLength(6));
+      i['antwortformat'] = 'zuordnung';
+      i['antwort'] = {
+        'elemente': ['1', '2', '3', '4'],
+        'optionen': ['a', 'b', 'c', 'd', 'e', ''],
+        'richtig': {'0': 'A', '1': 'B', '2': 'C'},
+      };
+      expect(antwortFehler(a), ['Element 4 hat keine richtige Option', 'Option F ist leer']);
+    });
+
+    group('Formatwechsel', () {
+      test('zwischen Ankreuzformaten bleibt alles stehen', () {
+        final neu = antwortFuerFormat('mc_1aus6', {
+          'optionen': fuenf,
+          'richtig': [0, 1],
+        });
+        expect(neu['optionen'], fuenf);
+        expect(neu['richtig'], [0, 1]);
+      });
+
+      test('eine Markierung wird zur Zahl oder Liste, wie das Format es braucht', () {
+        expect(antwortFuerFormat('mc_2aus5', {'optionen': fuenf, 'richtig': 2})['richtig'], [2]);
+        expect(
+          antwortFuerFormat('mc_1aus5', {
+            'optionen': fuenf,
+            'richtig': [2],
+          })['richtig'],
+          2,
+        );
+      });
+
+      test('leere Plätze über der Formatgröße fallen weg, gefüllte bleiben', () {
+        expect(antwortFuerFormat('mc_1aus5', {'optionen': ['a', 'b', 'c', 'd', 'e', ''], 'richtig': 1})['optionen'], fuenf);
+        expect(antwortFuerFormat('mc_1aus5', {'optionen': sechs, 'richtig': 1})['optionen'], sechs);
+      });
+
+      test('zwischen anderen Formaten bleiben gemeinsame Felder gleichen Typs', () {
+        final neu = antwortFuerFormat('halboffen', {'wert': 8, 'toleranz': 0.5, 'einheit': 'km'});
+        expect(neu['wert'], 8);
+        expect(neu['toleranz'], 0.5);
+        expect(neu['einheit'], 'km');
+        expect(neu['vorlage'], 'x = {x}');
+        final term = antwortFuerFormat('offen_zahl', {'optionen': fuenf, 'richtig': 1, 'wert': 'kaputt'});
+        expect(term['wert'], 0);
+        expect(term.containsKey('optionen'), isFalse);
+      });
+    });
+  });
+
   group('Fehlerbilder', () {
     Map<String, dynamic> mit(String format, Map<String, dynamic> antwort, Map<String, dynamic> fb) {
       final a = gueltigeAufgabe('a1');

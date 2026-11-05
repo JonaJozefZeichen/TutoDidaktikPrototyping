@@ -169,8 +169,12 @@ void _pruefeItem(
   if (antwort is! Map<String, dynamic>) {
     b.add(Befund('$pfad/antwort', 'Antwort fehlt'));
   } else if (format is String && antwortformate.contains(format)) {
-    final f = pruefeAntwort(format, antwort);
-    if (f != null) b.add(Befund('$pfad/antwort', f));
+    final eigene = _pruefeAuswahl(format, antwort);
+    // Die Meldung der App-Prüfung nur, wenn die verständlicheren nichts finden.
+    final f = eigene.isEmpty ? pruefeAntwort(format, antwort) : null;
+    for (final text in [...eigene, ?f]) {
+      b.add(Befund('$pfad/antwort', text));
+    }
   }
   final hilfen = it['hilfen'];
   if (hilfen is! List || hilfen.length != 3) {
@@ -184,6 +188,44 @@ void _pruefeItem(
       }
     }
   }
+}
+
+/// Verständliche Meldungen für Formate mit festen Antworten.
+List<String> _pruefeAuswahl(String format, Map<String, dynamic> a) {
+  final m = <String>[];
+  List<dynamic> liste(String key) => a[key] is List ? a[key] as List : const [];
+  bool leer(List<dynamic> l, int i) => i >= l.length || '${l[i] ?? ''}'.trim().isEmpty;
+  final ankreuz = ankreuzFormate[format];
+  if (ankreuz != null) {
+    final (n, r) = ankreuz;
+    final optionen = liste('optionen');
+    if (optionen.length > n) m.add('Zu viele Antworten: ${optionen.length}, dieses Format hat genau $n');
+    for (var i = 0; i < n; i++) {
+      if (leer(optionen, i)) m.add('Antwort ${i + 1} ist leer');
+    }
+    final markiert = richtigeIndizes(a['richtig']).length;
+    if (markiert > r) m.add('Zu viele richtige Antworten: $markiert markiert, dieses Format hat genau $r');
+    if (markiert < r) m.add('Zu wenige richtige Antworten: $markiert markiert, dieses Format hat genau $r');
+  } else if (format == 'lueckentext') {
+    for (final nr in [1, 2]) {
+      final werte = liste('luecke_$nr');
+      for (var i = 0; i < 3; i++) {
+        if (leer(werte, i)) m.add('Lücke $nr: Antwort ${i + 1} ist leer');
+      }
+    }
+  } else if (format == 'zuordnung') {
+    final elemente = liste('elemente');
+    final optionen = liste('optionen');
+    final richtig = a['richtig'] is Map ? a['richtig'] as Map : const {};
+    for (var i = 0; i < 4; i++) {
+      if (leer(elemente, i)) m.add('Element ${i + 1} ist leer');
+      if (richtig['$i'] == null) m.add('Element ${i + 1} hat keine richtige Option');
+    }
+    for (var i = 0; i < 6; i++) {
+      if (leer(optionen, i)) m.add('Option ${String.fromCharCode(65 + i)} ist leer');
+    }
+  }
+  return m;
 }
 
 final _fehlerbildMuster = RegExp(r'^[a-z0-9_]+$');
@@ -205,9 +247,7 @@ void _pruefeFehlerbilder(Map<String, dynamic> it, String pfad, List<Befund> b) {
       b.add(Befund(pfad, 'Fehlerbild "$name": nur Kleinbuchstaben, Ziffern und _, z. B. vorzeichenfehler'));
     }
     final passt = switch (format) {
-      'mc_1aus5' => _mcSchluessel(k, 5, [a['richtig']]),
-      'mc_1aus6' => _mcSchluessel(k, 6, [a['richtig']]),
-      'mc_2aus5' => _mcSchluessel(k, 5, a['richtig'] is List ? a['richtig'] as List : const []),
+      'mc_1aus5' || 'mc_1aus6' || 'mc_2aus5' => _mcSchluessel(k, _antwortZahl('$format', a), richtigeIndizes(a['richtig'])),
       'lueckentext' => _lueckeSchluessel(k, a['richtig']),
       'zuordnung' => _zuordnungSchluessel(k, a['richtig']),
       'offen_zahl' || 'halboffen' when a['art'] != 'term' => _wertSchluessel(k, a),
@@ -224,6 +264,13 @@ void _pruefeFehlerbilder(Map<String, dynamic> it, String pfad, List<Befund> b) {
 }
 
 enum _Schluessel { ok, richtig, unpassend }
+
+/// Auch überzählige Antworten haben einen gültigen Schlüssel, bis sie entfernt sind.
+int _antwortZahl(String format, Map<dynamic, dynamic> a) {
+  final n = ankreuzFormate[format]!.$1;
+  final l = a['optionen'] is List ? (a['optionen'] as List).length : 0;
+  return l > n ? l : n;
+}
 
 _Schluessel _mcSchluessel(String k, int n, List<dynamic> richtig) {
   final i = int.tryParse(k);
@@ -275,6 +322,7 @@ void _pruefeMitLoader(Map<String, dynamic> inhalt, List<Befund> b) {
     final rest = trenner > 0 ? f.substring(trenner + 2) : f;
     if (texte.contains(rest) || texte.contains(f)) continue;
     final n = items.indexWhere((i) => i is Map && i['item_id'] == kopf);
+    if (n >= 0 && b.any((x) => x.pfad == 'items/$n/antwort' && x.istFehler)) continue;
     b.add(Befund(n >= 0 ? 'items/$n/antwort' : '', rest));
   }
   if (aufgabe == null && !b.any((x) => x.istFehler)) {
