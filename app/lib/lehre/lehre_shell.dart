@@ -5,6 +5,7 @@ import 'package:tuto_didaktik/api.dart';
 import 'package:tuto_didaktik/demo.dart';
 import 'package:tuto_didaktik/lehre/klassen_seite.dart';
 import 'package:tuto_didaktik/lehre/merkliste_seite.dart';
+import 'package:tuto_didaktik/lehre/schueler_ansicht.dart';
 import 'package:tuto_didaktik/lehre/paket_editor.dart';
 import 'package:tuto_didaktik/lehre/store_seite.dart';
 import 'package:tuto_didaktik/lehre/zustand.dart';
@@ -38,6 +39,8 @@ class _LehreShellState extends State<LehreShell> {
     oeffneZuweisen: _oeffneZuweisen,
     oeffne: _push,
   );
+
+  void _oeffneSchuelerAnsicht() => _push(SchuelerAnsicht(zustand: _z));
 
   void _oeffneZuweisen({String? paketId, Map<String, Set<String>>? auswahl}) =>
       _push(ZuweisenSeite(zustand: _z, paketId: paketId, auswahl: auswahl));
@@ -126,6 +129,7 @@ class _LehreShellState extends State<LehreShell> {
     return switch (_seite) {
       0 => KlassenSeite(
         zustand: _z,
+        onSchuelerAnsicht: _oeffneSchuelerAnsicht,
         onKlasse: (k) => _push(
           KlasseSeite(
             zustand: _z,

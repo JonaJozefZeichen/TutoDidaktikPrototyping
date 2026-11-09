@@ -19,7 +19,6 @@ class LehreZustand extends ChangeNotifier {
   Map<String, int> varianten = const {};
   Stammdaten? stamm;
   LehrDaten daten = LehrDaten();
-  List<TestKlasse> klassen = const [];
   String? fehler;
   bool laedt = true;
 
@@ -43,7 +42,6 @@ class LehreZustand extends ChangeNotifier {
       _setzeAufgaben(a);
       daten = d;
       levelTitel = {for (final l in s.levels) l['id'] as String: '${l['titel'] ?? ''}'};
-      klassen = testKlassen(person.id, _kompetenzenProLernwelt(s));
       fehler = null;
     } on ApiFehler catch (e) {
       fehler = e.text;
@@ -58,14 +56,35 @@ class LehreZustand extends ChangeNotifier {
     varianten = variantenZahlen(a);
   }
 
-  Map<int, List<String>> _kompetenzenProLernwelt(Stammdaten s) {
-    final m = <int, Set<String>>{};
-    for (final l in s.levels) {
-      final w = l['lernwelt'];
-      if (w is! int) continue;
-      m.putIfAbsent(w, () => {}).addAll(((l['kompetenzen'] as List?) ?? const []).whereType<String>());
+  /// Item → Kompetenz, für den Lernstand der Testkonten.
+  Map<String, String> get itemKompetenz => {
+    for (final a in aufgaben)
+      for (final i in alleItems(a.inhalt))
+        if (i['item_id'] is String && i['kompetenz'] is String) i['item_id'] as String: i['kompetenz'] as String,
+  };
+
+  /// Nur die Testklasse; weitere Klassen legen später Lehrpersonen oder das
+  /// Tuto-Team an.
+  List<TestKlasse> get klassen => [
+    testKlasse(person.id, versuche: daten.versuche, itemKompetenz: itemKompetenz, jetzt: uhr()),
+  ];
+
+  /// Speichert die Antworten eines Testkontos aus der Schüler*innen-Ansicht.
+  Future<String?> speichereVersuche(List<SchuelerVersuch> neu) => aendere((d) => d.versuche.addAll(neu));
+
+  /// Ein Testkonto gibt ein Paket ab.
+  Future<String?> gibAb(String konto, String zuweisung) => aendere((d) {
+    d.abgaben.removeWhere((a) => a.konto == konto && a.zuweisung == zuweisung);
+    d.abgaben.add(Abgabe(konto: konto, zuweisung: zuweisung, am: uhr()));
+  });
+
+  /// Antworten eines Kontos zu einer Zuweisung, je Item die letzte.
+  List<SchuelerVersuch> antworten(String konto, String zuweisung) {
+    final letzte = <String, SchuelerVersuch>{};
+    for (final v in daten.versuche) {
+      if (v.konto == konto && v.zuweisung == zuweisung) letzte[v.itemId] = v;
     }
-    return {for (final e in m.entries) e.key: (e.value.toList()..sort())};
+    return letzte.values.toList();
   }
 
   Future<void> setzeAuchUnfreigegebene(bool wert) async {

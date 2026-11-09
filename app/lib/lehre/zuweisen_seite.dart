@@ -459,22 +459,22 @@ class ZuweisungSeite extends StatefulWidget {
 }
 
 class _ZuweisungSeiteState extends State<ZuweisungSeite> {
-  /// Nur Teststand: so tun, als wären seit jetzt so viele Tage vergangen.
-  int _tage = 0;
-
   TestKlasse get klasse => widget.klasse;
   Paket get paket => widget.paket;
   Zuweisung get zuweisung => widget.zuweisung;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ListenableBuilder(listenable: widget.zustand, builder: (context, _) => _inhalt(context));
+
+  Widget _inhalt(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final jetzt = LehreZustand.uhr().add(Duration(days: _tage));
+    final jetzt = LehreZustand.uhr();
     final personen = [
       for (final s in klasse.schueler)
         if (zuweisung.verteilung.containsKey(s.id)) s,
     ];
-    final stand = {for (final s in personen) s.id: testFertig(s.id, paket.id, zuweisung, jetzt)};
+    final stand = {for (final s in personen) s.id: abgabeStand(s.id, zuweisung, widget.zustand.daten.abgaben, jetzt)};
     final fertig = stand.values.where((x) => x.fertig).length;
     return Column(
       children: [
@@ -508,27 +508,8 @@ class _ZuweisungSeiteState extends State<ZuweisungSeite> {
           child: Text(
             'Verschickt am ${datumText(zuweisung.am)} · '
             '${zuweisung.abgabe == null ? 'ohne Abgabedatum' : 'Abgabe bis ${datumText(zuweisung.abgabe!)}'} · '
-            '${zuweisung.gruppen == 1 ? '1 Gruppe' : '${zuweisung.gruppen} Gruppen'} · Testdaten',
+            '${zuweisung.gruppen == 1 ? '1 Gruppe' : '${zuweisung.gruppen} Gruppen'} · Testklasse',
             style: const TextStyle(fontSize: 12, color: hinweisGelb, fontWeight: FontWeight.w600),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-          child: Row(
-            children: [
-              Text('Testzeit: ', style: text.bodySmall),
-              SegmentedButton<int>(
-                key: const ValueKey('testzeit'),
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: 0, label: Text('jetzt')),
-                  ButtonSegment(value: 3, label: Text('in 3 Tagen')),
-                  ButtonSegment(value: 14, label: Text('in 2 Wochen')),
-                ],
-                selected: {_tage},
-                onSelectionChanged: (x) => setState(() => _tage = x.first),
-              ),
-            ],
           ),
         ),
         Expanded(

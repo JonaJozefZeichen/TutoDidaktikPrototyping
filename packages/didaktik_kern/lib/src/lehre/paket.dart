@@ -92,6 +92,7 @@ class GeneratorEinstellung {
 
 class Zuweisung {
   Zuweisung({
+    String? id,
     required this.klasse,
     required this.am,
     required this.verteilung,
@@ -99,9 +100,11 @@ class Zuweisung {
     this.version = 1,
     this.gruppen = 1,
     List<String>? aufgaben,
-  }) : aufgaben = aufgaben ?? [];
+  }) : aufgaben = aufgaben ?? [],
+       id = id ?? '$klasse-${am.microsecondsSinceEpoch}';
 
   factory Zuweisung.fromJson(Map<String, dynamic> j) => Zuweisung(
+    id: j['id'] as String?,
     klasse: j['klasse'] as String,
     am: DateTime.parse(j['am'] as String),
     verteilung: {...((j['verteilung'] as Map?) ?? const {}).map((k, v) => MapEntry('$k', '$v'))},
@@ -111,6 +114,8 @@ class Zuweisung {
     aufgaben: [...((j['aufgaben'] as List?) ?? const []).whereType<String>()],
   );
 
+  /// Eindeutig pro Versand und Klasse; Antworten und Abgaben zeigen darauf.
+  final String id;
   final String klasse;
   final DateTime am;
 
@@ -128,6 +133,7 @@ class Zuweisung {
   final List<String> aufgaben;
 
   Map<String, dynamic> toJson() => {
+    'id': id,
     'klasse': klasse,
     'am': am.toIso8601String(),
     'verteilung': verteilung,

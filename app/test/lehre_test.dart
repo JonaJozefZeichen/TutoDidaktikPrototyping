@@ -164,11 +164,11 @@ void main() {
     await t.tap(find.byKey(const ValueKey('zuweisen-pruefen')));
     await t.pumpAndSettle();
     expect(find.text('Überprüfen und senden'), findsOneWidget);
-    expect(find.textContaining('Gruppe Montag ('), findsOneWidget);
+    expect(find.textContaining('Testklasse ('), findsOneWidget);
     await t.tap(find.byKey(const ValueKey('zuweisen-senden')));
     await t.pumpAndSettle();
     expect(find.textContaining('verschickt'), findsWidgets);
-    expect(find.textContaining('zugewiesen: Gruppe Montag'), findsOneWidget);
+    expect(find.textContaining('zugewiesen: Testklasse'), findsOneWidget);
   });
 
   testWidgets('Paket-Code: eine andere Lehrperson holt eine Kopie', (t) async {
@@ -201,13 +201,71 @@ void main() {
   Finder mitSchluessel(String anfang) =>
       find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith(anfang));
 
-  testWidgets('Klasse: Förderpaket an Betroffene, verschwindet nach Versand; Zuweisung mit Stand', (t) async {
+  testWidgets('Testklasse: zuweisen, in der Schüler*innen-Ansicht lösen, Antworten und Lernstand sehen', (t) async {
     await starteAls(t, testApi(), 'lehrperson-schule');
+    expect(find.text('Testklasse'), findsOneWidget);
+    expect(mitSchluessel('klasse-'), findsNWidgets(1));
+
+    await seite(t, 'Pakete');
+    await t.tap(find.byKey(const ValueKey('paket-generieren')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('generieren')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('paket-zurueck')));
+    await t.pumpAndSettle();
+
+    await seite(t, 'Klassen');
     await t.tap(mitSchluessel('klasse-lehrperson').first);
     await t.pumpAndSettle();
-    expect(find.text('Kompetenzen der Klasse'), findsOneWidget);
+    expect(find.byKey(const ValueKey('kompetenzen-leer')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('klasse-zuweisen')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-eigenes')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-paket')));
+    await t.pumpAndSettle();
+    await t.tap(find.textContaining('Generiertes Paket').last);
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-pruefen')));
+    await t.pumpAndSettle();
+    expect(find.textContaining('Testklasse (3)'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('zuweisen-senden')));
+    await t.pumpAndSettle();
+    expect(find.textContaining('0/3 fertig'), findsOneWidget);
 
-    // Förderpaket anlegen: Empfänger*innen sind die Betroffenen.
+    // Als "Du" in der Schüler*innen-Ansicht lösen.
+    await t.tap(find.byKey(const ValueKey('klasse-schueler-ansicht')));
+    await t.pumpAndSettle();
+    expect(find.text('Test-Insel · Gamification aus'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('postfach')));
+    await t.pumpAndSettle();
+    await t.tap(mitSchluessel('post-').first);
+    await t.pumpAndSettle();
+    for (var i = 0; i < 5; i++) {
+      await t.tap(find.byKey(const ValueKey('weiss-nicht')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('weiter')));
+      await t.pumpAndSettle();
+    }
+    expect(find.text('0 von 5 richtig'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('ansicht-zurueck')));
+    await t.pumpAndSettle();
+
+    // Die Klasse zeigt jetzt echten Stand und eine Förderempfehlung.
+    expect(find.textContaining('1/3 fertig'), findsOneWidget);
+    expect(find.byKey(const ValueKey('kompetenzen-kasten')), findsOneWidget);
+    await t.tap(mitSchluessel('zuweisung-paket').first);
+    await t.pumpAndSettle();
+    expect(find.text('1 von 3 fertig'), findsOneWidget);
+    await t.tap(mitSchluessel('zuweisung-person-').first);
+    await t.pumpAndSettle();
+    expect(find.text('0 von 5 richtig'), findsOneWidget);
+    expect(find.textContaining('Weiß ich nicht'), findsWidgets);
+    await t.tap(find.byKey(const ValueKey('ergebnis-zurueck')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisung-zurueck')));
+    await t.pumpAndSettle();
+
     final foerder = find.byWidgetPredicate(
       (w) =>
           w is TextButton &&
@@ -215,60 +273,10 @@ void main() {
           (w.key! as ValueKey<String>).value.startsWith('foerder-') &&
           w.onPressed != null,
     );
-    final kompetenz = (t.widget(foerder.first).key! as ValueKey<String>).value.substring('foerder-'.length);
+    expect(foerder, findsWidgets);
     await t.tap(foerder.first);
     await t.pumpAndSettle();
-    expect(find.byKey(const ValueKey('foerder-hinweis')), findsOneWidget);
-    await t.tap(find.byKey(const ValueKey('generieren')));
-    await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('paket-zurueck')));
-    await t.pumpAndSettle();
-
-    // Über die Paketliste zuweisen: vorausgewählt, mit Abgabedatum.
-    await seite(t, 'Pakete');
-    await t.tap(mitSchluessel('paket-zuweisen-').first);
-    await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('zuweisen-datum')));
-    await t.pumpAndSettle();
-    await t.tap(find.text('OK'));
-    await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('zuweisen-pruefen')));
-    await t.pumpAndSettle();
-    expect(find.textContaining('Abgabe bis: '), findsOneWidget);
-    expect(find.byKey(const ValueKey('zuweisen-warnung')), findsNothing);
-    await t.tap(find.byKey(const ValueKey('zuweisen-senden')));
-    await t.pumpAndSettle();
-
-    // Noch einmal dasselbe: Warnung.
-    await t.tap(mitSchluessel('paket-zuweisen-').first);
-    await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('zuweisen-pruefen')));
-    await t.pumpAndSettle();
-    expect(find.byKey(const ValueKey('zuweisen-warnung')), findsOneWidget);
-    await t.tap(find.byKey(const ValueKey('zuweisen-zurueck')));
-    await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('zuweisen-zurueck')));
-    await t.pumpAndSettle();
-
-    // Die Empfehlung ist weg, die Zuweisung zeigt den Stand.
-    await seite(t, 'Klassen');
-    await t.tap(mitSchluessel('klasse-lehrperson').first);
-    await t.pumpAndSettle();
-    expect(find.byKey(ValueKey('foerder-verschickt-$kompetenz')), findsOneWidget);
-    expect(find.byKey(ValueKey('foerder-$kompetenz')), findsNothing);
-    await t.tap(mitSchluessel('zuweisung-paket').first);
-    await t.pumpAndSettle();
-    expect(find.byKey(const ValueKey('zuweisung-stand')), findsOneWidget);
-    expect(find.textContaining('Abgabe bis'), findsOneWidget);
-    await t.tap(find.byKey(const ValueKey('zuweisung-zurueck')));
-    await t.pumpAndSettle();
-
-    // "Paket zuweisen" in der Klasse: neues Paket mit allen Personen.
-    await t.tap(find.byKey(const ValueKey('klasse-zuweisen')));
-    await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('zuweisen-neues')));
-    await t.pumpAndSettle();
-    expect(find.textContaining('Schüler*innen (20)'), findsOneWidget);
+    expect(find.textContaining('für 1 Person der Testklasse'), findsOneWidget);
   });
 
   testWidgets('PDF: Blätter pro Gruppe mit Lösungen, Copyright und SRDP-Kennzeichnung', (t) async {

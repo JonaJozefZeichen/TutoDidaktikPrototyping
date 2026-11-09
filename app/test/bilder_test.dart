@@ -146,6 +146,29 @@ void main() {
     await t.tap(find.byKey(const ValueKey('zuweisen-senden')));
     await t.pump(const Duration(seconds: 6));
     await t.pumpAndSettle();
+    // Schüler*innen-Ansicht: Insel, Post, eine Aufgabe, Abgabe.
+    await t.tap(find.byKey(const ValueKey('klasse-schueler-ansicht')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_emulator_insel.png'));
+    await t.tap(find.byKey(const ValueKey('postfach')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_emulator_post.png'));
+    await t.tap(
+      find
+          .byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('post-'))
+          .first,
+    );
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_emulator_aufgabe.png'));
+    for (var i = 0; i < 5; i++) {
+      await t.tap(find.byKey(const ValueKey('weiss-nicht')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const ValueKey('weiter')));
+      await t.pumpAndSettle();
+    }
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_emulator_fertig.png'));
+    await t.tap(find.byKey(const ValueKey('ansicht-zurueck')));
+    await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_klasse_v2.png'));
     await t.tap(
       find
@@ -154,8 +177,6 @@ void main() {
           )
           .first,
     );
-    await t.pumpAndSettle();
-    await t.tap(find.text('in 3 Tagen'));
     await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_zuweisung.png'));
     await t.tap(find.byKey(const ValueKey('zuweisung-zurueck')));

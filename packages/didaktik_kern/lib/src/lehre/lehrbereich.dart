@@ -4,6 +4,7 @@ library;
 
 import 'package:didaktik_kern/src/lehre/filter.dart';
 import 'package:didaktik_kern/src/lehre/paket.dart';
+import 'package:didaktik_kern/src/lehre/testklassen.dart';
 import 'package:didaktik_kern/src/modelle.dart';
 
 const standardOrdner = 'gemerkt';
@@ -44,10 +45,18 @@ class GespeicherteSuche {
 /// einer älteren Version speichert, bekommt einen Konflikt statt die
 /// Änderungen eines anderen Fensters zu überschreiben.
 class LehrDaten {
-  LehrDaten({this.version = 0, List<MerkOrdner>? ordner, List<GespeicherteSuche>? suchen, List<Paket>? pakete})
-    : ordner = ordner ?? [MerkOrdner(id: standardOrdner, name: 'Gemerkt')],
-      suchen = suchen ?? [],
-      pakete = pakete ?? [] {
+  LehrDaten({
+    this.version = 0,
+    List<MerkOrdner>? ordner,
+    List<GespeicherteSuche>? suchen,
+    List<Paket>? pakete,
+    List<SchuelerVersuch>? versuche,
+    List<Abgabe>? abgaben,
+  }) : ordner = ordner ?? [MerkOrdner(id: standardOrdner, name: 'Gemerkt')],
+       suchen = suchen ?? [],
+       pakete = pakete ?? [],
+       versuche = versuche ?? [],
+       abgaben = abgaben ?? [] {
     if (!this.ordner.any((o) => o.id == standardOrdner)) {
       this.ordner.insert(0, MerkOrdner(id: standardOrdner, name: 'Gemerkt'));
     }
@@ -58,12 +67,20 @@ class LehrDaten {
     ordner: [for (final o in (j['ordner'] as List?) ?? const []) MerkOrdner.fromJson(o as Map<String, dynamic>)],
     suchen: [for (final s in (j['suchen'] as List?) ?? const []) GespeicherteSuche.fromJson(s as Map<String, dynamic>)],
     pakete: [for (final p in (j['pakete'] as List?) ?? const []) Paket.fromJson(p as Map<String, dynamic>)],
+    versuche: [
+      for (final v in (j['versuche'] as List?) ?? const []) SchuelerVersuch.fromJson(v as Map<String, dynamic>),
+    ],
+    abgaben: [for (final a in (j['abgaben'] as List?) ?? const []) Abgabe.fromJson(a as Map<String, dynamic>)],
   );
 
   int version;
   final List<MerkOrdner> ordner;
   final List<GespeicherteSuche> suchen;
   final List<Paket> pakete;
+
+  /// Antworten und Abgaben der Testkonten aus der Schüler\*innen-Ansicht.
+  final List<SchuelerVersuch> versuche;
+  final List<Abgabe> abgaben;
 
   /// Alle gemerkten Aufgaben, egal in welchem Ordner.
   Set<String> get gemerkt => {for (final o in ordner) ...o.aufgaben};
@@ -80,6 +97,8 @@ class LehrDaten {
     'ordner': [for (final o in ordner) o.toJson()],
     'suchen': [for (final s in suchen) s.toJson()],
     'pakete': [for (final p in pakete) p.toJson()],
+    'versuche': [for (final v in versuche) v.toJson()],
+    'abgaben': [for (final a in abgaben) a.toJson()],
   };
 }
 

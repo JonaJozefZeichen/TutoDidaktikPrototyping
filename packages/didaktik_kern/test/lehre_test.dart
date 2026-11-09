@@ -301,18 +301,6 @@ void main() {
     });
   });
 
-  test('Testklassen sind reproduzierbar und je nach Person verschieden', () {
-    final k = {
-      5: ['ag-a', 'ag-b', 'fa-c'],
-      6: ['an-d'],
-    };
-    final a = testKlassen('lehrperson-schule', k);
-    expect(a.map((x) => x.toJson()), testKlassen('lehrperson-schule', k).map((x) => x.toJson()));
-    expect(a.first.schueler.length, 20);
-    expect(a.first.schueler.first.stufen.keys, unorderedEquals(['ag-a', 'ag-b', 'fa-c']));
-    expect(testKlassen('lehrperson-nachhilfe', k).first.art, 'nachhilfe');
-  });
-
   group('Gruppen und Förderung', () {
     test('Gruppen heißen nach dem Alphabet, beliebig viele, Standard 1', () {
       expect(gruppenNamenBis(4), ['A', 'B', 'C', 'D']);
@@ -335,29 +323,6 @@ void main() {
       final z = Paket.fromJson(jsonDecode(jsonEncode(p.toJson())) as Map<String, dynamic>);
       expect(z.foerderung!.schueler, ['s1', 's2']);
       expect(z.toJson(), p.toJson());
-    });
-
-    test('Testantworten: reproduzierbar, falsche haben eine gegebene Antwort', () {
-      final person = testKlassen('lehrperson-schule', {
-        5: ['ag-test'],
-      }).first.schueler.first;
-      final inhalt = gueltigeAufgabe('t1');
-      final item = (inhalt['items'] as List).first as Map<String, dynamic>;
-      item['antwortformat'] = 'mc_1aus6';
-      item['antwort'] = {
-        'optionen': ['a', 'b', 'c', 'd', 'e', 'f'],
-        'richtig': 0,
-      };
-      final aufgaben = {'t1': inhalt};
-      final ergebnisse = [
-        for (var i = 0; i < 40; i++) ...testAntworten(person, 'paket-$i', ['t1'], aufgaben),
-      ];
-      expect(ergebnisse, hasLength(40));
-      expect(testAntworten(person, 'paket-1', ['t1'], aufgaben).single.richtig, ergebnisse[1].richtig);
-      for (final e in ergebnisse) {
-        expect(e.gegeben.isEmpty, e.richtig);
-        if (!e.richtig) expect(['b', 'c', 'd', 'e', 'f'], contains(e.gegeben));
-      }
     });
   });
 
@@ -454,15 +419,77 @@ void main() {
       expect(() => l.geteiltesPaket(andere, 'TUTO-XXXX-XXX'), throwsA(isA<RegelFehler>()));
       expect(() => l.geteiltesPaket(didaktik, code), throwsA(isA<RegelFehler>()));
     });
+  });
 
-    test('Bearbeitungsstand: reproduzierbar, zu spät nach dem Abgabedatum', () {
-      final z = Zuweisung(klasse: 'k', am: DateTime(2026, 11, 1), verteilung: {}, abgabe: DateTime(2026, 11, 2));
-      final jetzt = DateTime(2026, 11, 30);
-      final alle = [for (var i = 0; i < 50; i++) testFertig('s$i', 'p', z, jetzt)];
-      expect(alle.where((x) => x.fertig).length, inInclusiveRange(20, 45));
-      expect(alle.any((x) => x.fertig && x.zuSpaet), isTrue);
-      expect(alle.where((x) => !x.fertig).every((x) => x.zuSpaet), isTrue);
-      expect(testFertig('s1', 'p', z, jetzt), alle[1]);
+  group('Testklasse', () {
+    SchuelerVersuch versuch(String konto, String item, double r, {DateTime? am}) => SchuelerVersuch(
+      konto: konto,
+      paket: 'p',
+      zuweisung: 'z',
+      aufgabe: 'a',
+      itemId: item,
+      antwort: r >= 1 ? '' : 'x',
+      r: r,
+      hilfen: 0,
+      sekunden: 30,
+      am: am ?? DateTime(2026, 11, 9),
+    );
+
+    test('eine Testklasse mit drei Konten, Stufen nur aus echten Antworten', () {
+      final leer = testKlasse('lehrperson-schule', jetzt: DateTime(2026, 11, 10));
+      expect(leer.name, 'Testklasse');
+      expect(leer.schueler.map((s) => s.id), ['lehrperson-schule-du', 'lehrperson-schule-b', 'lehrperson-schule-c']);
+      expect(leer.schueler.first.stufen, isEmpty);
+      expect(leer.schueler.first.gesamt, 'noch offen');
+      final k = testKlasse(
+        'lehrperson-schule',
+        versuche: [
+          versuch('lehrperson-schule-du', 'i1', 1),
+          versuch('lehrperson-schule-du', 'i2', 0),
+          versuch('lehrperson-schule-du', 'i3', 1),
+          versuch('lehrperson-schule-b', 'i1', 0),
+        ],
+        itemKompetenz: {'i1': 'ag-a', 'i2': 'ag-a', 'i3': 'fa-b'},
+        jetzt: DateTime(2026, 11, 10),
+      );
+      expect(k.schueler[0].stufen, {'ag-a': 1, 'fa-b': 3});
+      expect(k.schueler[0].aufgabenWoche, 3);
+      expect(k.schueler[1].stufen, {'ag-a': 0});
+      expect(k.schueler[2].stufen, isEmpty);
+    });
+
+    test('Abgabestand: fertig, zu spät, offen, nicht abgegeben', () {
+      final z = Zuweisung(klasse: 'k', am: DateTime(2026, 11, 1), verteilung: {}, abgabe: DateTime(2026, 11, 5));
+      final abgaben = [
+        Abgabe(konto: 'a', zuweisung: z.id, am: DateTime(2026, 11, 3)),
+        Abgabe(konto: 'b', zuweisung: z.id, am: DateTime(2026, 11, 7)),
+      ];
+      expect(abgabeStand('a', z, abgaben, DateTime(2026, 11, 8)), (
+        fertig: true,
+        am: DateTime(2026, 11, 3),
+        zuSpaet: false,
+      ));
+      expect(abgabeStand('b', z, abgaben, DateTime(2026, 11, 8)).zuSpaet, isTrue);
+      expect(abgabeStand('c', z, abgaben, DateTime(2026, 11, 4)), (fertig: false, am: null, zuSpaet: false));
+      expect(abgabeStand('c', z, abgaben, DateTime(2026, 11, 8)).zuSpaet, isTrue);
+    });
+
+    test('Versuche, Abgaben und Zuweisungs-ID überstehen JSON', () {
+      final p = Paket(id: 'p', titel: 't', erstellt: DateTime(2026))..plaetze.add(PaketPlatz(aufgabe: 'a', fassung: 1));
+      versende(
+        p,
+        {
+          'k': ['s'],
+        },
+        gruppen: 1,
+        jetzt: DateTime(2026, 11, 9),
+      );
+      final d = LehrDaten(pakete: [p])
+        ..versuche.add(versuch('s', 'i1', 0.5))
+        ..abgaben.add(Abgabe(konto: 's', zuweisung: p.zuweisungen.single.id, am: DateTime(2026, 11, 10)));
+      final z = LehrDaten.fromJson(jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>);
+      expect(z.toJson(), d.toJson());
+      expect(z.pakete.single.zuweisungen.single.id, p.zuweisungen.single.id);
     });
   });
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tuto_didaktik/editor/vorschau.dart';
 import 'package:tuto_didaktik/lehre/bausteine.dart';
+import 'package:tuto_didaktik/lehre/schueler_ansicht.dart';
 import 'package:tuto_didaktik/lehre/store_seite.dart';
 import 'package:tuto_didaktik/lehre/zustand.dart';
 import 'package:tuto_didaktik/lehre/zuweisen_seite.dart';
@@ -16,7 +17,8 @@ Widget _testHinweis() => Container(
   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
   color: const Color(0xFFFFF4D6),
   child: const Text(
-    'Testdaten: erfundene Personen und Lernstände. Alle Werte sind Förderinformation, kein Notenersatz.',
+    'Testklasse: drei Testkonten, die du in der Schüler*innen-Ansicht selbst bedienst. '
+    'Alle Werte sind Förderinformation, kein Notenersatz.',
     style: TextStyle(fontSize: 12, color: hinweisGelb, fontWeight: FontWeight.w600),
   ),
 );
@@ -34,15 +36,15 @@ class IkmMarke extends StatelessWidget {
 
 /// Startseite der Lehrenden: die eigenen Klassen bzw. Nachhilfegruppen.
 class KlassenSeite extends StatelessWidget {
-  const KlassenSeite({super.key, required this.zustand, required this.onKlasse});
+  const KlassenSeite({super.key, required this.zustand, required this.onKlasse, required this.onSchuelerAnsicht});
 
   final LehreZustand zustand;
   final void Function(TestKlasse) onKlasse;
+  final VoidCallback onSchuelerAnsicht;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final nachhilfe = zustand.klassen.isNotEmpty && zustand.klassen.first.art == 'nachhilfe';
     return Column(
       children: [
         _testHinweis(),
@@ -50,7 +52,13 @@ class KlassenSeite extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(nachhilfe ? 'Meine Nachhilfegruppen' : 'Meine Klassen', style: text.titleLarge),
+              Text('Meine Klassen', style: text.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                'Vorerst gibt es nur die Testklasse. Weitere Klassen legst du später selbst an, oder das Tuto-Team '
+                'richtet sie mit der Schullizenz ein.',
+                style: text.bodySmall,
+              ),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 12,
@@ -81,6 +89,13 @@ class KlassenSeite extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 10),
                                 _verteilung(k),
+                                const SizedBox(height: 10),
+                                FilledButton.icon(
+                                  key: const ValueKey('schueler-ansicht'),
+                                  onPressed: onSchuelerAnsicht,
+                                  icon: const Icon(Icons.phone_iphone, size: 18),
+                                  label: const Text('Schüler*innen-Ansicht öffnen'),
+                                ),
                               ],
                             ),
                           ),
@@ -180,15 +195,18 @@ class KlasseSeite extends StatelessWidget {
   final LehreZustand zustand;
   final LehreAktionen aktionen;
   final TestKlasse klasse;
+
+  /// Aktueller Stand der Klasse (Stufen ändern sich mit jeder Antwort).
+  TestKlasse get _k => zustand.klassen.firstWhere((k) => k.id == klasse.id, orElse: () => klasse);
   final void Function(TestSchuelerin) onSchuelerin;
 
   /// Förderpaket nur für die Personen, die in [kompetenz] unter Stufe 2 sind.
   Future<void> _foerderpaket(BuildContext context, String kompetenz) async {
     final ziel = [
-      for (final s in klasse.schueler)
-        if ((s.stufen[kompetenz] ?? 0) <= 1) s.id,
+      for (final s in _k.schueler)
+        if (s.stufen[kompetenz] != null && s.stufen[kompetenz]! <= 1) s.id,
     ];
-    final p = zustand.neuesPaket(titel: 'Förderpaket $kompetenz (${klasse.name})')
+    final p = zustand.neuesPaket(titel: 'Förderpaket $kompetenz (${_k.name})')
       ..empfaenger[klasse.id] = ziel
       ..einstellung.anzahl = 4
       ..filter.umschalten('kompetenz', kompetenz)
@@ -209,7 +227,7 @@ class KlasseSeite extends StatelessWidget {
     final wahl = await showDialog<String>(
       context: context,
       builder: (d) => SimpleDialog(
-        title: Text('Paket an ${klasse.name} zuweisen'),
+        title: Text('Paket an ${_k.name} zuweisen'),
         children: [
           SimpleDialogOption(
             key: const ValueKey('zuweisen-eigenes'),
@@ -233,13 +251,13 @@ class KlasseSeite extends StatelessWidget {
       ),
     );
     if (wahl == null || !context.mounted) return;
-    final alle = {for (final s in klasse.schueler) s.id};
+    final alle = {for (final s in _k.schueler) s.id};
     if (wahl == 'eigenes') {
       aktionen.oeffneZuweisen(auswahl: {klasse.id: alle});
       return;
     }
-    final p = zustand.neuesPaket(titel: 'Paket ${klasse.name}');
-    p.empfaenger[klasse.id] = [for (final s in klasse.schueler) s.id];
+    final p = zustand.neuesPaket(titel: 'Paket ${_k.name}');
+    p.empfaenger[klasse.id] = [for (final s in _k.schueler) s.id];
     final f = await zustand.speicherePaket(p);
     if (!context.mounted) return;
     if (f != null) {
@@ -253,8 +271,8 @@ class KlasseSeite extends StatelessWidget {
   /// es jetzt brauchen; dann verschwindet die Empfehlung.
   DateTime? _foerderungVerschickt(String kompetenz) {
     final betroffen = {
-      for (final s in klasse.schueler)
-        if ((s.stufen[kompetenz] ?? 0) <= 1) s.id,
+      for (final s in _k.schueler)
+        if (s.stufen[kompetenz] != null && s.stufen[kompetenz]! <= 1) s.id,
     };
     DateTime? zuletzt;
     for (final p in zustand.daten.pakete) {
@@ -278,16 +296,13 @@ class KlasseSeite extends StatelessWidget {
     return ListenableBuilder(
       listenable: zustand,
       builder: (context, _) {
-        final kompetenzen = klasse.schueler.isEmpty ? <String>[] : klasse.schueler.first.stufen.keys.toList();
+        final kompetenzen = {for (final s in _k.schueler) ...s.stufen.keys}.toList()..sort();
         final proKompetenz = [
           for (final k in kompetenzen)
-            (
-              k,
-              klasse.schueler.where((s) => (s.stufen[k] ?? 0) <= 1).length,
-              klasse.schueler.isEmpty
-                  ? 0
-                  : klasse.schueler.fold<int>(0, (n, s) => n + (s.stufen[k] ?? 0)) / klasse.schueler.length,
-            ),
+            () {
+              final mit = [for (final s in _k.schueler) ?s.stufen[k]];
+              return (k, mit.where((x) => x <= 1).length, mit.reduce((a, b) => a + b) / mit.length);
+            }(),
         ]..sort((a, b) => b.$2.compareTo(a.$2));
         final mitAufgaben = {for (final a in zustand.aufgaben) ...a.kompetenzen};
         final pakete = [
@@ -300,11 +315,13 @@ class KlasseSeite extends StatelessWidget {
               if (z.klasse == klasse.id) (p, z),
         ]..sort((a, b) => b.$2.am.compareTo(a.$2.am));
         final jetzt = LehreZustand.uhr();
-        final mittel = klasse.schueler.isEmpty
-            ? 0.0
-            : klasse.schueler.fold<double>(0, (n, s) => n + s.mittel) / klasse.schueler.length;
+        final mitDaten = [
+          for (final s in _k.schueler)
+            if (s.stufen.isNotEmpty) s,
+        ];
+        final mittel = mitDaten.isEmpty ? 0.0 : mitDaten.fold<double>(0, (n, s) => n + s.mittel) / mitDaten.length;
         final verteilung = {
-          for (final g in ['sicher', 'teils sicher', 'unsicher']) g: klasse.schueler.where((s) => s.gesamt == g).length,
+          for (final g in ['sicher', 'teils sicher', 'unsicher']) g: _k.schueler.where((s) => s.gesamt == g).length,
         };
         return Column(
           children: [
@@ -319,7 +336,15 @@ class KlasseSeite extends StatelessWidget {
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: const Icon(Icons.arrow_back),
                   ),
-                  Text('${klasse.name} · ${klasse.lernwelt}. Klasse', style: text.titleMedium),
+                  Text('${_k.name} · ${_k.lernwelt}. Klasse', style: text.titleMedium),
+                  const Spacer(),
+                  OutlinedButton.icon(
+                    key: const ValueKey('klasse-schueler-ansicht'),
+                    onPressed: () => aktionen.oeffne(SchuelerAnsicht(zustand: zustand)),
+                    icon: const Icon(Icons.phone_iphone, size: 18),
+                    label: const Text('Schüler*innen-Ansicht'),
+                  ),
+                  const SizedBox(width: 8),
                 ],
               ),
             ),
@@ -335,32 +360,41 @@ class KlasseSeite extends StatelessWidget {
                       child: _Kasten(
                         titel: 'Kompetenzen der Klasse',
                         unterzeile:
-                            'Mittel ${ikmStufen[mittel.round().clamp(0, 3)]} · ${verteilung['sicher']} sicher, '
+                            '${mitDaten.isEmpty ? 'Noch keine Antworten' : 'Mittel ${ikmStufen[mittel.round().clamp(0, 3)]}'} · ${verteilung['sicher']} sicher, '
                             '${verteilung['teils sicher']} teils sicher, ${verteilung['unsicher']} unsicher',
-                        kind: ListView(
-                          key: const ValueKey('kompetenzen-kasten'),
-                          children: [
-                            for (final (k, n, m) in proKompetenz)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 2),
-                                child: Row(
-                                  children: [
-                                    Expanded(child: Text(k, overflow: TextOverflow.ellipsis)),
-                                    IkmMarke(m.round().clamp(0, 3)),
-                                    SizedBox(
-                                      width: 124,
-                                      child: Text(
-                                        '$n unter Stufe 2',
-                                        textAlign: TextAlign.right,
-                                        style: text.bodySmall,
+                        kind: proKompetenz.isEmpty
+                            ? Text(
+                                'Noch keine Antworten. Pakete zuweisen und in der Schüler*innen-Ansicht lösen.',
+                                key: const ValueKey('kompetenzen-leer'),
+                                style: text.bodySmall,
+                              )
+                            : ListView(
+                                key: const ValueKey('kompetenzen-kasten'),
+                                children: [
+                                  for (final (k, n, m) in proKompetenz)
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 2),
+                                      child: Row(
+                                        children: [
+                                          Expanded(child: Text(k, overflow: TextOverflow.ellipsis)),
+                                          IkmMarke(m.round().clamp(0, 3)),
+                                          SizedBox(
+                                            width: 124,
+                                            child: Text(
+                                              '$n unter Stufe 2',
+                                              textAlign: TextAlign.right,
+                                              style: text.bodySmall,
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            width: 120,
+                                            child: _foerderZelle(context, k, n, mitAufgaben.contains(k)),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    SizedBox(width: 120, child: _foerderZelle(context, k, n, mitAufgaben.contains(k))),
-                                  ],
-                                ),
+                                ],
                               ),
-                          ],
-                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -401,6 +435,7 @@ class KlasseSeite extends StatelessWidget {
                                               klasse: klasse,
                                               person: person,
                                               paket: p,
+                                              zuweisung: z,
                                               gruppe: gruppe,
                                             ),
                                           ),
@@ -452,7 +487,7 @@ class KlasseSeite extends StatelessWidget {
                             ),
                         ],
                       ),
-                      for (final s in klasse.schueler)
+                      for (final s in _k.schueler)
                         TableRow(
                           decoration: const BoxDecoration(
                             border: Border(top: BorderSide(color: linie)),
@@ -514,17 +549,18 @@ class KlasseSeite extends StatelessWidget {
   String _zuweisungZeile(Paket p, Zuweisung z, DateTime jetzt) {
     final fertig = [
       for (final id in z.verteilung.keys)
-        if (testFertig(id, p.id, z, jetzt).fertig) id,
+        if (abgabeStand(id, z, zustand.daten.abgaben, jetzt).fertig) id,
     ].length;
     return [
       'am ${datumText(z.am)}',
-      z.verteilung.length == klasse.schueler.length ? 'an alle' : 'an ${z.verteilung.length} Personen',
+      z.verteilung.length == _k.schueler.length ? 'an alle' : 'an ${z.verteilung.length} Personen',
       if (z.abgabe != null) 'Abgabe ${datumText(z.abgabe!)}',
       '$fertig/${z.verteilung.length} fertig',
     ].join(' · ');
   }
 
   Widget _gesamt(String g) {
+    if (g == 'noch offen') return Marke(g);
     final i = switch (g) {
       'sicher' => 3,
       'teils sicher' => 1,
@@ -575,7 +611,7 @@ class SchuelerinSeite extends StatelessWidget {
     final pakete = [
       for (final p in zustand.daten.pakete)
         for (final z in p.zuweisungen)
-          if (z.klasse == klasse.id && z.verteilung.containsKey(person.id)) (p, z.verteilung[person.id]!),
+          if (z.klasse == klasse.id && z.verteilung.containsKey(person.id)) (p, z, z.verteilung[person.id]!),
     ];
     return Column(
       children: [
@@ -655,20 +691,21 @@ class SchuelerinSeite extends StatelessWidget {
                         if (pakete.isEmpty)
                           Text('Noch keine Pakete zugewiesen.', style: text.bodySmall)
                         else
-                          for (final (p, gruppe) in pakete)
+                          for (final (p, z, gruppe) in pakete)
                             ListTile(
-                              key: ValueKey('ergebnis-${p.id}'),
+                              key: ValueKey('ergebnis-${p.id}-${z.id}'),
                               dense: true,
                               contentPadding: EdgeInsets.zero,
-                              title: Text(p.titel),
+                              title: Text(p.anzeigeName(z.version)),
                               subtitle: Text('Gruppe $gruppe · ${p.plaetze.length} Aufgaben'),
-                              trailing: Text(_quote(p, gruppe), style: text.bodySmall),
+                              trailing: Text(_quote(z), style: text.bodySmall),
                               onTap: () => oeffne(
                                 PaketErgebnisSeite(
                                   zustand: zustand,
                                   klasse: klasse,
                                   person: person,
                                   paket: p,
+                                  zuweisung: z,
                                   gruppe: gruppe,
                                 ),
                               ),
@@ -685,14 +722,12 @@ class SchuelerinSeite extends StatelessWidget {
     );
   }
 
-  String _quote(Paket p, String gruppe) {
-    final a = testAntworten(person, p.id, aufgabenDerGruppe(p, gruppe), _inhalte(zustand));
-    if (a.isEmpty) return '';
+  String _quote(Zuweisung z) {
+    final a = zustand.antworten(person.id, z.id);
+    if (a.isEmpty) return 'noch offen';
     return '${a.where((x) => x.richtig).length}/${a.length} richtig';
   }
 }
-
-Map<String, Map<String, dynamic>> _inhalte(LehreZustand z) => {for (final a in z.aufgaben) a.id: a.inhalt};
 
 /// Aufgaben, die eine Person in Gruppe [gruppe] bekommt.
 List<String> aufgabenDerGruppe(Paket p, String gruppe) {
@@ -711,6 +746,7 @@ class PaketErgebnisSeite extends StatefulWidget {
     required this.klasse,
     required this.person,
     required this.paket,
+    required this.zuweisung,
     required this.gruppe,
   });
 
@@ -718,6 +754,7 @@ class PaketErgebnisSeite extends StatefulWidget {
   final TestKlasse klasse;
   final TestSchuelerin person;
   final Paket paket;
+  final Zuweisung zuweisung;
   final String gruppe;
 
   @override
@@ -726,12 +763,15 @@ class PaketErgebnisSeite extends StatefulWidget {
 
 class _PaketErgebnisSeiteState extends State<PaketErgebnisSeite> {
   int _auswahl = 0;
+  List<String> _ids = const [];
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final ids = aufgabenDerGruppe(widget.paket, widget.gruppe);
-    final antworten = testAntworten(widget.person, widget.paket.id, ids, _inhalte(widget.zustand));
+    final antworten = widget.zustand.antworten(widget.person.id, widget.zuweisung.id)
+      ..sort((a, b) => ids.indexOf(a.aufgabe).compareTo(ids.indexOf(b.aufgabe)));
+    _ids = ids;
     final richtig = antworten.where((a) => a.richtig).length;
     final gewaehlt = antworten.isEmpty ? null : antworten[_auswahl.clamp(0, antworten.length - 1)];
     final aufgabe = gewaehlt == null ? null : widget.zustand.nachId[gewaehlt.aufgabe];
@@ -796,7 +836,7 @@ class _PaketErgebnisSeiteState extends State<PaketErgebnisSeite> {
     );
   }
 
-  Widget _antwortKarte(BuildContext context, int i, TestAntwort a) {
+  Widget _antwortKarte(BuildContext context, int i, SchuelerVersuch a) {
     final text = Theme.of(context).textTheme;
     final s = widget.zustand.nachId[a.aufgabe];
     final item = s == null ? null : ladeZurVorschau(s.inhalt).aufgabe?.items.where((x) => x.id == a.itemId).firstOrNull;
@@ -827,7 +867,7 @@ class _PaketErgebnisSeiteState extends State<PaketErgebnisSeite> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      '${a.platz + 1}. ${s?.titel ?? a.aufgabe}',
+                      '${_ids.indexOf(a.aufgabe) + 1}. ${s?.titel ?? a.aufgabe}',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -839,7 +879,10 @@ class _PaketErgebnisSeiteState extends State<PaketErgebnisSeite> {
               ),
               const SizedBox(height: 6),
               if (!a.richtig && !a.selbstBewertet)
-                Text('Antwort: ${a.gegeben}', style: const TextStyle(color: fehlerRot)),
+                Text(
+                  a.antwort.isEmpty ? 'Antwort: „Weiß ich nicht“' : 'Antwort: ${a.antwort}',
+                  style: const TextStyle(color: fehlerRot),
+                ),
               if (a.fehlerbild != null) Text('Fehlerbild: ${a.fehlerbild}', style: text.bodySmall),
               if (loesung.isNotEmpty) Text('Lösung: $loesung', style: text.bodyMedium),
               const SizedBox(height: 4),
