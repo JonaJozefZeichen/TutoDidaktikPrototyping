@@ -85,16 +85,35 @@ class LehrDaten {
 
 /// Alle Ablagen, nach Person.
 class Lehrbereich {
-  Lehrbereich({Map<String, LehrDaten>? daten}) : daten = daten ?? {};
+  Lehrbereich({Map<String, LehrDaten>? daten, Map<String, Map<String, dynamic>>? codes})
+    : daten = daten ?? {},
+      codes = codes ?? {};
 
   factory Lehrbereich.fromJson(Map<String, dynamic> j) => Lehrbereich(
     daten: {
       for (final e in ((j['personen'] as Map?) ?? const {}).entries)
         '${e.key}': LehrDaten.fromJson((e.value as Map).cast<String, dynamic>()),
     },
+    codes: {
+      for (final e in ((j['codes'] as Map?) ?? const {}).entries) '${e.key}': (e.value as Map).cast<String, dynamic>(),
+    },
   );
 
   final Map<String, LehrDaten> daten;
+
+  /// Geteilte Pakete: Code → `{von, paket}`. Jede Lehrperson kann ein Paket
+  /// per Code holen und bekommt eine eigene Kopie.
+  final Map<String, Map<String, dynamic>> codes;
+
+  /// Das aktuelle Paket hinter [code], oder ein Fehler.
+  Paket geteiltesPaket(Person p, String code) {
+    _pruefe(p);
+    final eintrag = codes[code.trim().toUpperCase()];
+    if (eintrag == null) {
+      throw const RegelFehler('nicht_gefunden', 'Diesen Paket-Code gibt es nicht', status: 404);
+    }
+    return Paket.fromJson((eintrag['paket'] as Map).cast<String, dynamic>());
+  }
 
   static void _pruefe(Person p) {
     if (!p.darfPaketeBauen) {
@@ -131,10 +150,18 @@ class Lehrbereich {
     }
     d.version = alt.version + 1;
     daten[p.id] = d;
+    for (final paket in d.pakete) {
+      final c = paket.code;
+      if (c == null) continue;
+      final von = codes[c]?['von'];
+      if (von != null && von != p.id) continue; // fremder Code: nicht überschreiben
+      codes[c] = {'von': p.id, 'paket': paket.toJson()};
+    }
     return d;
   }
 
   Map<String, dynamic> toJson() => {
     'personen': {for (final e in daten.entries) e.key: e.value.toJson()},
+    'codes': codes,
   };
 }

@@ -104,6 +104,8 @@ class Schnittstelle {
           return _storeZeilen(auchUnfreigegebene: pfad.length == 3);
         case ['lehre', 'daten']:
           return lehre.lies(p).toJson();
+        case ['lehre', 'code', final code]:
+          return lehre.geteiltesPaket(p, code).toJson();
       }
     }
     if (methode == 'POST') {

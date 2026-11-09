@@ -6,6 +6,7 @@ library;
 
 import 'dart:math';
 
+import 'package:didaktik_kern/src/lehre/paket.dart';
 import 'package:didaktik_kern/src/pruefung.dart';
 
 /// iKM-Skala (Lern-Engine, "Zustände und Stufen").
@@ -224,4 +225,16 @@ List<TestAntwort> testAntworten(
     default:
       return ('(andere Antwort)', null);
   }
+}
+
+/// Erfundener Bearbeitungsstand einer Person in einer Zuweisung: fertig am
+/// welchem Tag, und ob nach dem Abgabedatum (dann ohne Punkte).
+({bool fertig, DateTime? am, bool zuSpaet}) testFertig(String schuelerId, String paketId, Zuweisung z, DateTime jetzt) {
+  final r = Random(streuwert('$schuelerId/$paketId/${z.am.toIso8601String()}'));
+  final fertig = r.nextDouble() < 0.7;
+  final am = z.am.add(Duration(hours: 2 + r.nextInt(24 * 5)));
+  if (!fertig || am.isAfter(jetzt)) {
+    return (fertig: false, am: null, zuSpaet: z.abgabe != null && jetzt.isAfter(z.abgabe!));
+  }
+  return (fertig: true, am: am, zuSpaet: z.abgabe != null && am.isAfter(z.abgabe!));
 }

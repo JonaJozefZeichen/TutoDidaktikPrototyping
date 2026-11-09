@@ -49,7 +49,7 @@ class _MerklisteSeiteState extends State<MerklisteSeite> {
       context: context,
       builder: (d) => AlertDialog(
         title: Text('„${o.name}“ löschen?'),
-        content: const Text('Die Aufgaben bleiben im Store, nur der Ordner verschwindet.'),
+        content: const Text('Die Aufgaben bleiben im Katalog, nur der Ordner verschwindet.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Abbrechen')),
           FilledButton(onPressed: () => Navigator.pop(d, true), child: const Text('Löschen')),
@@ -141,7 +141,7 @@ class _MerklisteSeiteState extends State<MerklisteSeite> {
                     if (z.daten.suchen.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('Im Store mit „Suche speichern“ anlegen.', style: text.bodySmall),
+                        child: Text('Im Katalog mit „Suche speichern“ anlegen.', style: text.bodySmall),
                       ),
                     for (final s in z.daten.suchen)
                       ListTile(
@@ -198,7 +198,7 @@ class _MerklisteSeiteState extends State<MerklisteSeite> {
                     child: o.aufgaben.isEmpty
                         ? Center(
                             child: Text(
-                              'Noch nichts gemerkt. Im Store mit dem Herz merken, über den Pfeil daneben in einen Ordner.',
+                              'Noch nichts gemerkt. Im Katalog mit dem Herz merken, über den Pfeil daneben in einen Ordner.',
                               style: text.bodySmall,
                             ),
                           )
@@ -268,6 +268,19 @@ class PaketeSeite extends StatelessWidget {
     aktionen.oeffnePaket(p.id);
   }
 
+  Future<void> _perCode(BuildContext context) async {
+    final code = await frageText(context, titel: 'Paket per Code holen', hinweis: 'z. B. TUTO-7K3F-9QX');
+    if (code == null || !context.mounted) return;
+    final (p, f) = await zustand.holePerCode(code);
+    if (!context.mounted) return;
+    if (p == null) {
+      await zeigeMeldung(context, f ?? 'Unbekannter Fehler', fehler: true);
+      return;
+    }
+    await zeigeMeldung(context, '„${p.titel}“ als eigene Kopie übernommen.');
+    aktionen.oeffnePaket(p.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
@@ -279,11 +292,30 @@ class PaketeSeite extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
+            children: [
+              FilledButton.icon(
+                key: const ValueKey('pakete-zuweisen'),
+                onPressed: () => aktionen.oeffneZuweisen(),
+                icon: const Icon(Icons.send_outlined, size: 18),
+                label: const Text('Pakete zuweisen'),
+              ),
+              OutlinedButton.icon(
+                key: const ValueKey('paket-per-code'),
+                onPressed: () => _perCode(context),
+                icon: const Icon(Icons.qr_code_2, size: 18),
+                label: const Text('Paket per Code holen'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text('Aufgabenpakete', style: text.titleLarge),
               const SizedBox(width: 12),
-              FilledButton.icon(
+              OutlinedButton.icon(
                 key: const ValueKey('paket-generieren'),
                 onPressed: () => _neu(context, generieren: true),
                 icon: const Icon(Icons.casino_outlined, size: 18),
@@ -300,7 +332,7 @@ class PaketeSeite extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Generieren würfelt passende Aufgaben, einzelne Plätze lassen sich sperren und neu würfeln. '
-            'Per Hand kommen die Aufgaben aus Merkliste oder Store.',
+            'Per Hand kommen die Aufgaben aus Merkliste oder Katalog. Verschickt wird über „Pakete zuweisen“.',
             style: text.bodySmall,
           ),
           const SizedBox(height: 16),
@@ -317,24 +349,36 @@ class PaketeSeite extends StatelessWidget {
                 child: ListTile(
                   key: ValueKey('paket-${p.id}'),
                   leading: const Icon(Icons.inventory_2_outlined, color: tutoBlau),
-                  title: Text(p.titel),
+                  title: Text(p.anzeigeName()),
                   subtitle: Text(
                     [
+                      ?p.code,
                       '${p.plaetze.length} Aufgaben',
                       minutenText(zustand.minuten(p.plaetze.map((x) => x.aufgabe))),
                       if (p.gruppen > 1) '${p.gruppen} Gruppen',
                       if (p.foerderung != null) 'Förderpaket',
                       if (p.zuweisungen.isNotEmpty)
-                        'zugewiesen: ${p.zuweisungen.map((z) => _klassenName(z.klasse)).join(', ')}',
+                        'zugewiesen: ${{for (final z in p.zuweisungen) _klassenName(z.klasse)}.join(', ')}',
                     ].join(' · '),
                   ),
-                  trailing: IconButton(
-                    tooltip: 'Paket löschen',
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () async {
-                      final f = await zustand.loeschePaket(p.id);
-                      if (f != null && context.mounted) await zeigeMeldung(context, f, fehler: true);
-                    },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton.icon(
+                        key: ValueKey('paket-zuweisen-${p.id}'),
+                        onPressed: p.plaetze.isEmpty ? null : () => aktionen.oeffneZuweisen(paketId: p.id),
+                        icon: const Icon(Icons.send_outlined, size: 18),
+                        label: const Text('Zuweisen'),
+                      ),
+                      IconButton(
+                        tooltip: 'Paket löschen',
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () async {
+                          final f = await zustand.loeschePaket(p.id);
+                          if (f != null && context.mounted) await zeigeMeldung(context, f, fehler: true);
+                        },
+                      ),
+                    ],
                   ),
                   onTap: () => aktionen.oeffnePaket(p.id),
                 ),

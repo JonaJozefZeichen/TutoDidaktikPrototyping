@@ -8,15 +8,24 @@ import 'package:tuto_didaktik/thema.dart';
 
 /// Was die Seiten des Bereichs für Lehrende aufrufen, um zu navigieren.
 class LehreAktionen {
-  const LehreAktionen({required this.oeffneAufgabe, required this.oeffnePaket});
+  const LehreAktionen({
+    required this.oeffneAufgabe,
+    required this.oeffnePaket,
+    required this.oeffneZuweisen,
+    required this.oeffne,
+  });
 
   final void Function(String id) oeffneAufgabe;
   final void Function(String paketId) oeffnePaket;
+
+  /// Zentrale Zuweisen-Ansicht, optional mit Paket und Vorauswahl.
+  final void Function({String? paketId, Map<String, Set<String>>? auswahl}) oeffneZuweisen;
+  final void Function(Widget seite) oeffne;
 }
 
-/// Aufgaben-Store: Suchfeld oben, Filter links, Treffer als Karten.
-class StoreSeite extends StatefulWidget {
-  const StoreSeite({super.key, required this.zustand, required this.aktionen, required this.filter});
+/// Aufgabenkatalog: Suchfeld oben, Filter links, Treffer als Karten.
+class KatalogSeite extends StatefulWidget {
+  const KatalogSeite({super.key, required this.zustand, required this.aktionen, required this.filter});
 
   final LehreZustand zustand;
   final LehreAktionen aktionen;
@@ -25,10 +34,10 @@ class StoreSeite extends StatefulWidget {
   final StoreFilter filter;
 
   @override
-  State<StoreSeite> createState() => _StoreSeiteState();
+  State<KatalogSeite> createState() => _KatalogSeiteState();
 }
 
-class _StoreSeiteState extends State<StoreSeite> {
+class _KatalogSeiteState extends State<KatalogSeite> {
   late final _suche = TextEditingController(text: widget.filter.text);
   bool _raster = true;
 

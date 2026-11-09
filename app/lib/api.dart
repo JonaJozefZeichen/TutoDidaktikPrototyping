@@ -115,6 +115,9 @@ class Api {
       ),
   ];
 
+  Future<Paket> geteiltesPaket(String code) async =>
+      Paket.fromJson(await _get('/lehre/code/${_id(code)}') as Map<String, dynamic>);
+
   Future<LehrDaten> lehrDaten() async => LehrDaten.fromJson(await _get('/lehre/daten') as Map<String, dynamic>);
 
   Future<LehrDaten> speichereLehrDaten(LehrDaten d) async =>

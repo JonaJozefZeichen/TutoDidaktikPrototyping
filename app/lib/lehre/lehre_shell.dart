@@ -8,9 +8,10 @@ import 'package:tuto_didaktik/lehre/merkliste_seite.dart';
 import 'package:tuto_didaktik/lehre/paket_editor.dart';
 import 'package:tuto_didaktik/lehre/store_seite.dart';
 import 'package:tuto_didaktik/lehre/zustand.dart';
+import 'package:tuto_didaktik/lehre/zuweisen_seite.dart';
 import 'package:tuto_didaktik/thema.dart';
 
-/// Rahmen des Bereichs für Lehrende: Klassen, Aufgaben-Store, Merkliste,
+/// Rahmen des Bereichs für Lehrende: Klassen, Aufgabenkatalog, Merkliste,
 /// Pakete. Läuft im selben Programm wie das Didaktik-Tool, mit eigenen Rechten.
 class LehreShell extends StatefulWidget {
   const LehreShell({super.key, required this.api, required this.person, required this.onAbmelden, this.demo});
@@ -31,7 +32,15 @@ class _LehreShellState extends State<LehreShell> {
   int _seite = 0;
   final _seitenWechsel = ValueNotifier<int>(0);
 
-  late final _aktionen = LehreAktionen(oeffneAufgabe: _oeffneAufgabe, oeffnePaket: _oeffnePaket);
+  late final _aktionen = LehreAktionen(
+    oeffneAufgabe: _oeffneAufgabe,
+    oeffnePaket: _oeffnePaket,
+    oeffneZuweisen: _oeffneZuweisen,
+    oeffne: _push,
+  );
+
+  void _oeffneZuweisen({String? paketId, Map<String, Set<String>>? auswahl}) =>
+      _push(ZuweisenSeite(zustand: _z, paketId: paketId, auswahl: auswahl));
 
   @override
   void initState() {
@@ -126,7 +135,7 @@ class _LehreShellState extends State<LehreShell> {
           ),
         ),
       ),
-      1 => StoreSeite(zustand: _z, aktionen: _aktionen, filter: _filter),
+      1 => KatalogSeite(zustand: _z, aktionen: _aktionen, filter: _filter),
       2 => MerklisteSeite(zustand: _z, aktionen: _aktionen, onSucheZeigen: _zeigeSuche),
       _ => PaketeSeite(zustand: _z, aktionen: _aktionen),
     };
@@ -173,7 +182,7 @@ class _LehreShellState extends State<LehreShell> {
                 ListenableBuilder(
                   listenable: _z,
                   builder: (_, _) => Tooltip(
-                    message: 'Nur im Teststand: Entwürfe im Store zeigen, solange wenig freigegeben ist',
+                    message: 'Nur im Teststand: Entwürfe im Katalog zeigen, solange wenig freigegeben ist',
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -204,7 +213,7 @@ class _LehreShellState extends State<LehreShell> {
                   onDestinationSelected: _wechsle,
                   destinations: const [
                     NavigationRailDestination(icon: Icon(Icons.groups_outlined), label: Text('Klassen')),
-                    NavigationRailDestination(icon: Icon(Icons.storefront_outlined), label: Text('Aufgaben')),
+                    NavigationRailDestination(icon: Icon(Icons.menu_book_outlined), label: Text('Katalog')),
                     NavigationRailDestination(icon: Icon(Icons.favorite_border), label: Text('Merkliste')),
                     NavigationRailDestination(icon: Icon(Icons.inventory_2_outlined), label: Text('Pakete')),
                   ],

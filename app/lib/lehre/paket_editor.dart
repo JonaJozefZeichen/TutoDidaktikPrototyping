@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:didaktik_kern/didaktik_kern.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:tuto_didaktik/editor/vorschau.dart';
 import 'package:printing/printing.dart';
@@ -10,6 +11,7 @@ import 'package:tuto_didaktik/lehre/bausteine.dart';
 import 'package:tuto_didaktik/lehre/paket_pdf.dart';
 import 'package:tuto_didaktik/lehre/store_seite.dart';
 import 'package:tuto_didaktik/lehre/zustand.dart';
+import 'package:tuto_didaktik/lehre/zuweisen_seite.dart';
 import 'package:tuto_didaktik/thema.dart';
 
 /// Paket-Editor: Plätze per Hand füllen oder generieren, einzelne Plätze
@@ -31,7 +33,7 @@ class PaketEditor extends StatefulWidget {
 
 class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStateMixin {
   late Paket _p;
-  late final TabController _tabs = TabController(length: 2, vsync: this);
+  late final TabController _tabs = TabController(length: 3, vsync: this);
   late final TextEditingController _titel;
   final _zufall = PaketEditor.zufall();
 
@@ -199,39 +201,6 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
     await _speichere();
   }
 
-  /// Förderpakete gehen ohne Rückfrage nur an die Personen, die die
-  /// Förderung brauchen; andere Pakete an eine gewählte Klasse.
-  Future<void> _zuweisen() async {
-    final f = _p.foerderung;
-    final TestKlasse? klasse;
-    if (f != null) {
-      klasse = z.klassen.where((k) => k.id == f.klasse).firstOrNull;
-    } else {
-      klasse = await showDialog<TestKlasse>(
-        context: context,
-        builder: (d) => SimpleDialog(
-          title: const Text('An Klasse zuweisen (Testdaten)'),
-          children: [
-            for (final k in z.klassen)
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(d, k),
-                child: Text('${k.name} · ${k.lernwelt}. Klasse · ${k.schueler.length} Personen'),
-              ),
-          ],
-        ),
-      );
-    }
-    if (klasse == null || !mounted) return;
-    final personen = [
-      for (final s in klasse.schueler)
-        if (f == null || f.schueler.contains(s.id)) s.id,
-    ];
-    final meldung = weiseZu(_p, klasse, personen);
-    setState(() {});
-    await _speichere();
-    if (mounted) await zeigeMeldung(context, meldung);
-  }
-
   /// Drucken als PDF: Gruppen wählen, auf Wunsch mit Lösungsblatt.
   Future<void> _drucken() async {
     final namen = gruppenNamenBis(_p.gruppen);
@@ -338,16 +307,36 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        '${_p.plaetze.length} Aufgaben · ${minutenText(minuten)}',
-                        key: const ValueKey('paket-summe'),
+                      Flexible(
+                        child: Text(
+                          '${_p.plaetze.length} Aufgaben · ${minutenText(minuten)}'
+                          '${_p.version > 0 ? ' · verschickt als Version ${_p.version}' : ''}',
+                          key: const ValueKey('paket-summe'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
+                      if (_p.code case final code?) ...[
+                        const SizedBox(width: 12),
+                        Tooltip(
+                          message: 'Code zum Teilen mit anderen Lehrpersonen. Klicken kopiert ihn.',
+                          child: ActionChip(
+                            key: const ValueKey('paket-code'),
+                            avatar: const Icon(Icons.share_outlined, size: 16),
+                            label: Text(code, style: const TextStyle(fontFamily: monoSchrift)),
+                            onPressed: () async {
+                              await Clipboard.setData(ClipboardData(text: code));
+                              if (context.mounted) await zeigeMeldung(context, 'Code $code kopiert');
+                            },
+                          ),
+                        ),
+                      ],
                       const Spacer(),
                       TextButton.icon(
                         key: const ValueKey('als-warenkorb'),
                         onPressed: z.offenesPaket == _p.id ? null : () => setState(() => z.offenesPaket = _p.id),
                         icon: Icon(z.offenesPaket == _p.id ? Icons.check : Icons.add_shopping_cart, size: 18),
-                        label: Text(z.offenesPaket == _p.id ? 'Store legt hier hinein' : 'Aus dem Store befüllen'),
+                        label: Text(z.offenesPaket == _p.id ? 'Katalog legt hier hinein' : 'Aus dem Katalog befüllen'),
                       ),
                       const SizedBox(width: 4),
                       OutlinedButton.icon(
@@ -355,13 +344,6 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                         onPressed: _p.plaetze.isEmpty ? null : _drucken,
                         icon: const Icon(Icons.print_outlined, size: 18),
                         label: const Text('Drucken / PDF'),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.icon(
-                        key: const ValueKey('paket-zuweisen'),
-                        onPressed: _p.plaetze.isEmpty ? null : _zuweisen,
-                        icon: const Icon(Icons.send_outlined, size: 18),
-                        label: const Text('Zuweisen'),
                       ),
                     ],
                   ),
@@ -376,7 +358,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                         'Förderpaket „${f.kompetenz}“ für ${f.schueler.length} '
                         '${f.schueler.length == 1 ? 'Person' : 'Personen'} der '
                         '${z.klassen.where((k) => k.id == f.klasse).firstOrNull?.name ?? f.klasse}. '
-                        'Zuweisen schickt es direkt an diese Personen.',
+                        'Beim Zuweisen sind diese Personen vorausgewählt.',
                         style: const TextStyle(color: tutoBlau, fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -389,6 +371,10 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       Tab(
                         key: const ValueKey('tab-gruppen'),
                         text: _p.gruppen == 1 ? 'Gruppen' : 'Gruppen (${_p.gruppen})',
+                      ),
+                      Tab(
+                        key: const ValueKey('tab-schueler'),
+                        text: 'Schüler*innen (${_p.empfaenger.values.fold(0, (n, l) => n + l.length)})',
                       ),
                     ],
                   ),
@@ -407,7 +393,11 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       Expanded(
                         child: TabBarView(
                           controller: _tabs,
-                          children: [_aufgabenTab(context, groesse.maxWidth), _gruppenTab(context)],
+                          children: [
+                            _aufgabenTab(context, groesse.maxWidth),
+                            _gruppenTab(context),
+                            _schuelerTab(context),
+                          ],
                         ),
                       ),
                       if (mitVorschau)
@@ -987,6 +977,49 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
           ],
         ),
       ),
+    );
+  }
+
+  // --- Tab Schüler*innen ---
+
+  late final Map<String, Set<String>> _empfaengerAuswahl = {
+    for (final e in _p.empfaenger.entries) e.key: {...e.value},
+  };
+
+  Widget _schuelerTab(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Wer das Paket bekommen soll', style: text.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Hinzufügen oder entfernen, auch aus mehreren Klassen. Verschickt wird über „Pakete zuweisen“; '
+          'dort sind diese Personen vorausgewählt und lassen sich vor dem Senden noch einmal prüfen.',
+          style: text.bodySmall,
+        ),
+        const SizedBox(height: 8),
+        KlassenBaum(
+          key: const ValueKey('editor-baum'),
+          klassen: z.klassen,
+          auswahl: _empfaengerAuswahl,
+          onChanged: () {
+            setState(() {
+              _p.empfaenger
+                ..clear()
+                ..addAll({
+                  for (final k in z.klassen)
+                    if (_empfaengerAuswahl[k.id]?.isNotEmpty ?? false)
+                      k.id: [
+                        for (final s in k.schueler)
+                          if (_empfaengerAuswahl[k.id]!.contains(s.id)) s.id,
+                      ],
+                });
+            });
+            _speichere();
+          },
+        ),
+      ],
     );
   }
 

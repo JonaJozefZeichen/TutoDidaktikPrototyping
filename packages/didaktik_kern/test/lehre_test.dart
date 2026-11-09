@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:convert';
 
 import 'package:didaktik_kern/didaktik_kern.dart';
@@ -313,10 +314,10 @@ void main() {
   });
 
   group('Gruppen und Förderung', () {
-    test('Gruppen heißen nach dem Alphabet, beliebig viele, Standard 2', () {
+    test('Gruppen heißen nach dem Alphabet, beliebig viele, Standard 1', () {
       expect(gruppenNamenBis(4), ['A', 'B', 'C', 'D']);
       expect(gruppenName(25), 'Z');
-      expect(Paket(id: 'p', titel: 't', erstellt: DateTime(2026)).gruppen, 2);
+      expect(Paket(id: 'p', titel: 't', erstellt: DateTime(2026)).gruppen, 1);
       final alle = {for (var i = 0; i < 8; i++) 'e$i': aufgabe('e$i', kompetenz: 'k', schwierigkeit: 3)};
       final g = bildeGruppen([PaketPlatz.von(alle['e0']!)], 5, alle);
       expect(g.keys, ['B', 'C', 'D', 'E']);
@@ -357,6 +358,111 @@ void main() {
         expect(e.gegeben.isEmpty, e.richtig);
         if (!e.richtig) expect(['b', 'c', 'd', 'e', 'f'], contains(e.gegeben));
       }
+    });
+  });
+
+  group('Versand und Codes', () {
+    Paket paket() =>
+        Paket(id: 'p', titel: 'Förderung', erstellt: DateTime(2026))
+          ..plaetze.addAll([PaketPlatz(aufgabe: 'a', fassung: 1), PaketPlatz(aufgabe: 'b', fassung: 2)]);
+
+    test('Versand pro Klasse, mit Abgabe und Abbild; gleiche Aufgaben bleiben Version 1', () {
+      final p = paket();
+      final abgabe = DateTime(2026, 11, 20);
+      expect(naechsteVersion(p), 1);
+      versende(
+        p,
+        {
+          'k1': ['s1', 's2'],
+          'k2': ['t1'],
+        },
+        gruppen: 2,
+        abgabe: abgabe,
+        jetzt: DateTime(2026, 11, 9),
+      );
+      expect(p.zuweisungen, hasLength(2));
+      expect(p.zuweisungen.first.verteilung, {'s1': 'A', 's2': 'B'});
+      expect(p.zuweisungen.first.abgabe, abgabe);
+      expect(p.zuweisungen.first.aufgaben, ['a@1', 'b@2']);
+      expect(p.version, 1);
+      expect(
+        schonVerschickt(p, {
+          'k1': ['s2', 's3'],
+        }),
+        ['s2'],
+      );
+      expect(naechsteVersion(p), 1);
+      expect(p.anzeigeName(), 'Förderung');
+    });
+
+    test('geänderte Aufgaben ergeben Version 2, ohne Warnung', () {
+      final p = paket();
+      versende(
+        p,
+        {
+          'k1': ['s1'],
+        },
+        gruppen: 1,
+        jetzt: DateTime(2026, 11, 9),
+      );
+      p.plaetze.add(PaketPlatz(aufgabe: 'c', fassung: 1));
+      expect(
+        schonVerschickt(p, {
+          'k1': ['s1'],
+        }),
+        isEmpty,
+      );
+      expect(naechsteVersion(p), 2);
+      versende(
+        p,
+        {
+          'k1': ['s1'],
+        },
+        gruppen: 1,
+        jetzt: DateTime(2026, 11, 10),
+      );
+      expect(p.version, 2);
+      expect(p.anzeigeName(), 'Förderung (2)');
+      expect(p.zuweisungen.last.version, 2);
+    });
+
+    test('Paket-Code: lesbar, teilbar, Kopie ohne Versand', () {
+      final code = paketCode(Random(3));
+      expect(code, matches(RegExp(r'^TUTO-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{3}$')));
+      final l = Lehrbereich();
+      final d = l.lies(lehrerin);
+      final p = paket()
+        ..code = code
+        ..empfaenger['k1'] = ['s1'];
+      versende(
+        p,
+        {
+          'k1': ['s1'],
+        },
+        gruppen: 1,
+        jetzt: DateTime(2026),
+      );
+      d.pakete.add(p);
+      l.speichere(lehrerin, d.toJson());
+      const andere = Person(id: 'lehrperson-nachhilfe', name: 'N', lehrperson: true);
+      final geteilt = l.geteiltesPaket(andere, code.toLowerCase());
+      final kopie = paketKopie(geteilt, id: 'neu', code: paketCode(Random(4)), jetzt: DateTime(2026));
+      expect(kopie.plaetze.map((x) => x.aufgabe), ['a', 'b']);
+      expect(kopie.zuweisungen, isEmpty);
+      expect(kopie.empfaenger, isEmpty);
+      expect(kopie.code, isNot(code));
+      expect(() => l.geteiltesPaket(andere, 'TUTO-XXXX-XXX'), throwsA(isA<RegelFehler>()));
+      expect(() => l.geteiltesPaket(didaktik, code), throwsA(isA<RegelFehler>()));
+    });
+
+    test('Bearbeitungsstand: reproduzierbar, zu spät nach dem Abgabedatum', () {
+      final z = Zuweisung(klasse: 'k', am: DateTime(2026, 11, 1), verteilung: {}, abgabe: DateTime(2026, 11, 2));
+      final jetzt = DateTime(2026, 11, 30);
+      final alle = [for (var i = 0; i < 50; i++) testFertig('s$i', 'p', z, jetzt)];
+      expect(alle.where((x) => x.fertig).length, inInclusiveRange(20, 45));
+      expect(alle.any((x) => x.fertig && x.zuSpaet), isTrue);
+      expect(alle.where((x) => !x.fertig).every((x) => x.zuSpaet), isTrue);
+      expect(testFertig('s1', 'p', z, jetzt), alle[1]);
     });
   });
 }

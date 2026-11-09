@@ -48,6 +48,12 @@ void main() {
     final vorher = LehreZustand.idErzeuger;
     LehreZustand.idErzeuger = (art) => '$art-${nr++}';
     addTearDown(() => LehreZustand.idErzeuger = vorher);
+    LehreZustand.uhr = () => DateTime(2026, 11, 20, 10);
+    LehreZustand.codeZufall = () => Random(7);
+    addTearDown(() {
+      LehreZustand.uhr = DateTime.now;
+      LehreZustand.codeZufall = Random.new;
+    });
     await ladeSchriften();
     t.view.physicalSize = const Size(1600, 1000);
     t.view.devicePixelRatio = 1;
@@ -66,7 +72,7 @@ void main() {
     );
     await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_klasse.png'));
-    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Aufgaben')));
+    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Katalog')));
     await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_store.png'));
     await t.tap(find.byKey(const ValueKey('filter-format-ankreuzen')));
@@ -115,14 +121,45 @@ void main() {
           .first,
     );
     await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('an-alle-senden')));
+    await t.tap(find.byKey(const ValueKey('klasse-zuweisen')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-eigenes')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-paket')));
+    await t.pumpAndSettle();
+    await t.tap(find.textContaining('Generiertes Paket').last);
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-gruppen-mehr')));
     await t.pumpAndSettle();
     await t.tap(
-      find.byType(SimpleDialogOption).first,
+      find
+          .byWidgetPredicate(
+            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('baum-klasse-'),
+          )
+          .last,
     );
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_zuweisen.png'));
+    await t.tap(find.byKey(const ValueKey('zuweisen-pruefen')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_zuweisen_pruefen.png'));
+    await t.tap(find.byKey(const ValueKey('zuweisen-senden')));
     await t.pump(const Duration(seconds: 6));
     await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_klasse_v2.png'));
+    await t.tap(
+      find
+          .byWidgetPredicate(
+            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('zuweisung-paket'),
+          )
+          .first,
+    );
+    await t.pumpAndSettle();
+    await t.tap(find.text('in 3 Tagen'));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_zuweisung.png'));
+    await t.tap(find.byKey(const ValueKey('zuweisung-zurueck')));
+    await t.pumpAndSettle();
     await t.tap(
       find
           .byWidgetPredicate(

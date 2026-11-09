@@ -254,8 +254,8 @@ pw.Widget _kaestchen(String text, {String? marke}) => pw.Padding(
   ),
 );
 
-pw.Widget _linien(int n) =>
-    pw.Column(children: [for (var i = 0; i < n; i++) pw.Container(height: 18, decoration: _unterstrich)]);
+/// Freier Platz für die Rechnung, ohne Linien (Jona, 09.11.2026).
+pw.Widget _platz(int zeilen) => pw.SizedBox(height: zeilen * 18.0);
 
 pw.Widget _antwortFeld(BlattItem it) {
   final a = it.antwort;
@@ -337,18 +337,15 @@ pw.Widget _antwortFeld(BlattItem it) {
         ],
       );
     case 'offen_text':
-      return _linien(5);
+      return _platz(6);
     case 'konstruktion':
-      return pw.Container(
-        height: 150,
-        decoration: pw.BoxDecoration(border: pw.Border.all(color: _linie, width: 0.7)),
-      );
+      return _platz(9);
     default:
       final vorlage = a['vorlage'];
       return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          _linien(3),
+          _platz(4),
           if (vorlage is String && vorlage.isNotEmpty) ...[
             pw.SizedBox(height: 4),
             pw.Text(vorlage.replaceAll(RegExp(r'\{[a-z]\}'), '________'), style: const pw.TextStyle(fontSize: 10)),

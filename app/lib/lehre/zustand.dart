@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:tuto_didaktik/api.dart';
 
-/// Gemeinsamer Stand des Bereichs für Lehrende: Aufgaben im Store, Stammdaten
+/// Gemeinsamer Stand des Bereichs für Lehrende: Aufgaben im Katalog, Stammdaten
 /// und die eigene Ablage (Merkliste, Suchen, Pakete). Jede Änderung an der
 /// Ablage geht sofort an den Server; bei einem Fehler wird neu geladen.
 class LehreZustand extends ChangeNotifier {
@@ -24,7 +24,7 @@ class LehreZustand extends ChangeNotifier {
   bool laedt = true;
 
   /// Teststand: auch noch nicht freigegebene Aufgaben zeigen, sonst wäre der
-  /// Store leer, solange niemand etwas freigegeben hat.
+  /// Katalog leer, solange niemand etwas freigegeben hat.
   bool auchUnfreigegebene = true;
 
   /// Paket, in das "+ ins Paket" legt (wie ein Warenkorb).
@@ -143,7 +143,25 @@ class LehreZustand extends ChangeNotifier {
   }
 
   Paket neuesPaket({String titel = 'Neues Paket'}) =>
-      Paket(id: neueId('paket'), titel: titel, erstellt: DateTime.now());
+      Paket(id: neueId('paket'), titel: titel, erstellt: uhr(), code: paketCode(codeZufall()));
+
+  /// Uhr des Bereichs; Tests setzen eine feste Zeit.
+  static DateTime Function() uhr = DateTime.now;
+
+  /// Zufall für Paket-Codes; Tests setzen einen festen Seed.
+  static Random Function() codeZufall = Random.new;
+
+  /// Holt ein Paket, das eine andere Lehrperson per Code teilt, als eigene Kopie.
+  Future<(Paket?, String?)> holePerCode(String code) async {
+    try {
+      final vorlage = await api.geteiltesPaket(code.trim().toUpperCase());
+      final kopie = paketKopie(vorlage, id: neueId('paket'), code: paketCode(codeZufall()), jetzt: uhr());
+      final f = await speicherePaket(kopie);
+      return (f == null ? kopie : null, f);
+    } on ApiFehler catch (e) {
+      return (null, e.text);
+    }
+  }
 
   /// "+ ins Paket": legt [id] in das offene Paket, sonst in ein neues.
   Future<(Paket, String?)> insPaket(String id) async {
@@ -203,18 +221,4 @@ class LehreZustand extends ChangeNotifier {
   static String Function(String art) idErzeuger = (art) =>
       '$art-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}${_zufall.nextInt(1 << 20).toRadixString(36)}';
   static String neueId(String art) => idErzeuger(art);
-}
-
-/// Weist [p] den [personen] der Klasse [k] zu, abwechselnd auf die Gruppen
-/// verteilt, und gibt die Meldung für die Oberfläche zurück. Im Teststand
-/// wird nichts verschickt.
-String weiseZu(Paket p, TestKlasse k, List<String> personen) {
-  final verteilung = verteileGruppen(personen, p.gruppen);
-  p.zuweisungen.removeWhere((x) => x.klasse == k.id);
-  p.zuweisungen.add(Zuweisung(klasse: k.id, am: DateTime.now(), verteilung: verteilung));
-  final zahlen = [
-    for (final g in gruppenNamenBis(p.gruppen)) '$g: ${verteilung.values.where((x) => x == g).length}',
-  ].join(', ');
-  final wer = personen.length == k.schueler.length ? k.name : '${personen.length} Personen der ${k.name}';
-  return 'An $wer zugewiesen ($zahlen). Im Test wird nichts verschickt.';
 }

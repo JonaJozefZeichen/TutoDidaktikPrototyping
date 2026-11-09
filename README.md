@@ -2,7 +2,7 @@
 
 Website, auf der das Didaktik-Team Aufgaben importiert, kontrolliert, verbessert und für die App freigibt. Konzept: *Design Document; Didaktik-Tool.md* im Tuto-Vault.
 
-Im selben Programm läuft der **Bereich für Lehrende** (Lehrpersonen an Schulen und Nachhilfelehrer\*innen von Mindlink): Klassen (Kompetenzen der Klasse, zugewiesene Pakete, „Paket an alle senden“, Förderpakete nur an die Betroffenen, Antworten pro Person), Aufgaben-Store mit Filtern, Merkliste mit Ordnern, Pakete per Hand oder per Generator mit Sperren und Neu-Würfeln, beliebig viele Gruppen (Standard 2, A, B, C …) gegen Abschreiben, Drucken als PDF mit Lösungsblatt. Welcher Bereich erscheint, entscheidet die Testperson beim Start. Konzept: *Design Document; Lehrpersonen-Ansicht.md* im Tuto-Vault.
+Im selben Programm läuft der **Bereich für Lehrende** (Lehrpersonen an Schulen und Nachhilfelehrer\*innen von Mindlink): Klassen (Kompetenzen der Klasse, Zuweisungen mit Bearbeitungsstand, Förderpakete nur an die Betroffenen, Antworten pro Person), Aufgabenkatalog mit Filtern, Merkliste mit Ordnern, Pakete per Hand oder per Generator mit Sperren und Neu-Würfeln, Gruppen (Standard 1, A, B, C …) gegen Abschreiben, Drucken als PDF mit Lösungsblatt, zentrales Zuweisen mit Klassenbaum, Abgabedatum und Überprüfen, Versionen bei geänderten Aufgaben, Paket-Codes zum Teilen. Welcher Bereich erscheint, entscheidet die Testperson beim Start. Konzept: *Design Document; Lehrpersonen-Ansicht.md* im Tuto-Vault.
 
 Das hier ist ein **Teststand**: kein echter Login, kein Supabase, keine Verbindung zur App.
 

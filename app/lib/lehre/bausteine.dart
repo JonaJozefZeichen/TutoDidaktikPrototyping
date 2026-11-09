@@ -159,7 +159,7 @@ Future<String?> frageText(BuildContext context, {required String titel, String? 
   );
 }
 
-/// Karte einer Aufgabe im Store, in der Merkliste und in Auswahl-Dialogen.
+/// Karte einer Aufgabe im Katalog, in der Merkliste und in Auswahl-Dialogen.
 class AufgabenKarte extends StatelessWidget {
   const AufgabenKarte({
     super.key,

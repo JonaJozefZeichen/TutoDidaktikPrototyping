@@ -91,21 +91,51 @@ class GeneratorEinstellung {
 }
 
 class Zuweisung {
-  Zuweisung({required this.klasse, required this.am, required this.verteilung});
+  Zuweisung({
+    required this.klasse,
+    required this.am,
+    required this.verteilung,
+    this.abgabe,
+    this.version = 1,
+    this.gruppen = 1,
+    List<String>? aufgaben,
+  }) : aufgaben = aufgaben ?? [];
 
   factory Zuweisung.fromJson(Map<String, dynamic> j) => Zuweisung(
     klasse: j['klasse'] as String,
     am: DateTime.parse(j['am'] as String),
     verteilung: {...((j['verteilung'] as Map?) ?? const {}).map((k, v) => MapEntry('$k', '$v'))},
+    abgabe: j['abgabe'] == null ? null : DateTime.parse(j['abgabe'] as String),
+    version: j['version'] as int? ?? 1,
+    gruppen: j['gruppen'] as int? ?? 1,
+    aufgaben: [...((j['aufgaben'] as List?) ?? const []).whereType<String>()],
   );
 
   final String klasse;
   final DateTime am;
 
-  /// Schüler\*in → Gruppe (`A`, `B`, `C`).
+  /// Schüler\*in → Gruppe (`A`, `B`, `C` ...).
   final Map<String, String> verteilung;
 
-  Map<String, dynamic> toJson() => {'klasse': klasse, 'am': am.toIso8601String(), 'verteilung': verteilung};
+  /// Abgabedatum; danach bringen die Aufgaben keine Punkte mehr. `null` = offen.
+  final DateTime? abgabe;
+
+  /// Fassung des Pakets beim Versand: steigt, wenn sich die Aufgaben ändern.
+  final int version;
+  final int gruppen;
+
+  /// Abbild der Aufgaben beim Versand (`id@fassung`), siehe [paketAbbild].
+  final List<String> aufgaben;
+
+  Map<String, dynamic> toJson() => {
+    'klasse': klasse,
+    'am': am.toIso8601String(),
+    'verteilung': verteilung,
+    'abgabe': abgabe?.toIso8601String(),
+    'version': version,
+    'gruppen': gruppen,
+    'aufgaben': aufgaben,
+  };
 }
 
 /// Höchstzahl der Gruppen; benannt nach dem Alphabet.
@@ -146,16 +176,20 @@ class Paket {
     required this.titel,
     required this.erstellt,
     List<PaketPlatz>? plaetze,
-    this.gruppen = 2,
+    this.gruppen = 1,
     Map<String, List<GruppenPlatz>>? gruppenPlaetze,
     this.antwortenMischen = true,
     GeneratorEinstellung? einstellung,
     this.quelle = 'alle',
     this.foerderung,
+    this.code,
+    this.version = 0,
+    Map<String, List<String>>? empfaenger,
     StoreFilter? filter,
     List<Zuweisung>? zuweisungen,
   }) : plaetze = plaetze ?? [],
        filter = filter ?? StoreFilter(),
+       empfaenger = empfaenger ?? {},
        gruppenPlaetze = gruppenPlaetze ?? {},
        einstellung = einstellung ?? GeneratorEinstellung(),
        zuweisungen = zuweisungen ?? [];
@@ -165,7 +199,7 @@ class Paket {
     titel: j['titel'] as String? ?? 'Paket',
     erstellt: DateTime.parse(j['erstellt'] as String),
     plaetze: [for (final p in (j['plaetze'] as List?) ?? const []) PaketPlatz.fromJson(p as Map<String, dynamic>)],
-    gruppen: (j['gruppen'] as int? ?? 2).clamp(1, maxGruppen),
+    gruppen: (j['gruppen'] as int? ?? 1).clamp(1, maxGruppen),
     gruppenPlaetze: {
       for (final e in ((j['gruppen_plaetze'] as Map?) ?? const {}).entries)
         '${e.key}': [for (final g in e.value as List) GruppenPlatz.fromJson(g as Map<String, dynamic>)],
@@ -179,6 +213,12 @@ class Paket {
     foerderung: j['foerderung'] is Map<String, dynamic>
         ? Foerderung.fromJson(j['foerderung'] as Map<String, dynamic>)
         : null,
+    code: j['code'] as String?,
+    version: j['version'] as int? ?? 0,
+    empfaenger: {
+      for (final e in ((j['empfaenger'] as Map?) ?? const {}).entries)
+        '${e.key}': [...(e.value as List).whereType<String>()],
+    },
     zuweisungen: [
       for (final z in (j['zuweisungen'] as List?) ?? const []) Zuweisung.fromJson(z as Map<String, dynamic>),
     ],
@@ -189,11 +229,27 @@ class Paket {
   final DateTime erstellt;
   final List<PaketPlatz> plaetze;
 
-  /// Zahl der Gruppen (1 = nur A, Standard 2 = A/B, höchstens [maxGruppen]).
+  /// Zahl der Gruppen (Standard 1 = nur A, höchstens [maxGruppen]).
   int gruppen;
 
   /// Gesetzt, wenn das Paket als Förderpaket aus einer Klasse entstand.
   Foerderung? foerderung;
+
+  /// Code zum Teilen mit anderen Lehrpersonen, z. B. `TUTO-7K3F-9QX`.
+  String? code;
+
+  /// Zahl der verschickten Fassungen (0 = noch nie verschickt).
+  int version;
+
+  /// Vorgesehene Empfänger\*innen: Klasse → Personen. Belegt die
+  /// Zuweisen-Ansicht vor.
+  final Map<String, List<String>> empfaenger;
+
+  /// Name mit Fassung, sobald es mehr als eine gibt: "Titel (2)".
+  String anzeigeName([int? v]) {
+    final n = v ?? version;
+    return n > 1 ? '$titel ($n)' : titel;
+  }
 
   /// Gruppe `B`/`C` → ein Platz pro Platz in [plaetze].
   final Map<String, List<GruppenPlatz>> gruppenPlaetze;
@@ -223,6 +279,9 @@ class Paket {
     'einstellung': einstellung.toJson(),
     'quelle': quelle,
     'foerderung': foerderung?.toJson(),
+    'code': code,
+    'version': version,
+    'empfaenger': empfaenger,
     'filter': filter.toJson(),
     'zuweisungen': [for (final z in zuweisungen) z.toJson()],
   };
@@ -563,4 +622,92 @@ bool _istIdentitaet(List<int> p) {
     if (p[i] != i) return false;
   }
   return true;
+}
+
+// --- Versand ---
+
+/// Abbild der Aufgaben eines Pakets, um gleiche und geänderte Fassungen zu erkennen.
+List<String> paketAbbild(Paket p) => [for (final x in p.plaetze) '${x.aufgabe}@${x.fassung}'];
+
+bool _gleich(List<String> a, List<String> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
+/// Personen, die genau diese Aufgaben schon einmal bekommen haben (für die
+/// Warnung vor doppeltem Versand).
+List<String> schonVerschickt(Paket p, Map<String, List<String>> empfaenger) {
+  final abbild = paketAbbild(p);
+  final schon = <String>{};
+  for (final z in p.zuweisungen) {
+    if (!_gleich(z.aufgaben, abbild)) continue;
+    for (final s in empfaenger[z.klasse] ?? const <String>[]) {
+      if (z.verteilung.containsKey(s)) schon.add(s);
+    }
+  }
+  return schon.toList()..sort();
+}
+
+/// Die Version, die ein Versand jetzt bekäme: gleich wie beim letzten Versand,
+/// wenn die Aufgaben gleich sind, sonst eine höher.
+int naechsteVersion(Paket p) {
+  if (p.zuweisungen.isEmpty || p.version == 0) return 1;
+  final letzte = p.zuweisungen.reduce((a, b) => a.am.isAfter(b.am) ? a : b);
+  return _gleich(letzte.aufgaben, paketAbbild(p)) ? p.version : p.version + 1;
+}
+
+/// Verschickt [p] an [empfaenger] (Klasse → Personen): pro Klasse eine
+/// Zuweisung, abwechselnd auf [gruppen] Gruppen verteilt.
+void versende(
+  Paket p,
+  Map<String, List<String>> empfaenger, {
+  required int gruppen,
+  DateTime? abgabe,
+  required DateTime jetzt,
+}) {
+  final version = naechsteVersion(p);
+  final abbild = paketAbbild(p);
+  p
+    ..gruppen = gruppen.clamp(1, maxGruppen)
+    ..version = version;
+  for (final e in empfaenger.entries) {
+    if (e.value.isEmpty) continue;
+    p.zuweisungen.add(
+      Zuweisung(
+        klasse: e.key,
+        am: jetzt,
+        verteilung: verteileGruppen(e.value, p.gruppen),
+        abgabe: abgabe,
+        version: version,
+        gruppen: p.gruppen,
+        aufgaben: abbild,
+      ),
+    );
+  }
+}
+
+const _codeZeichen = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/// Kurzer Code zum Teilen, ohne verwechselbare Zeichen (0/O, 1/I).
+String paketCode(Random r) {
+  String teil(int n) =>
+      String.fromCharCodes([for (var i = 0; i < n; i++) _codeZeichen.codeUnitAt(r.nextInt(_codeZeichen.length))]);
+  return 'TUTO-${teil(4)}-${teil(3)}';
+}
+
+/// Kopie eines geteilten Pakets für eine andere Lehrperson: ohne Versand,
+/// Empfänger\*innen und Förderung, mit neuer ID und neuem Code.
+Paket paketKopie(Paket vorlage, {required String id, required String code, required DateTime jetzt}) {
+  final j = vorlage.toJson()
+    ..['id'] = id
+    ..['code'] = code
+    ..['erstellt'] = jetzt.toIso8601String()
+    ..['version'] = 0
+    ..['zuweisungen'] = []
+    ..['empfaenger'] = {}
+    ..['foerderung'] = null;
+  return Paket.fromJson(j);
 }

@@ -5,6 +5,7 @@ import 'package:tuto_didaktik/editor/vorschau.dart';
 import 'package:tuto_didaktik/lehre/bausteine.dart';
 import 'package:tuto_didaktik/lehre/store_seite.dart';
 import 'package:tuto_didaktik/lehre/zustand.dart';
+import 'package:tuto_didaktik/lehre/zuweisen_seite.dart';
 import 'package:tuto_didaktik/thema.dart';
 import 'package:tuto_didaktik/vorschau/widgets/antwort_eingabe.dart';
 
@@ -188,6 +189,7 @@ class KlasseSeite extends StatelessWidget {
         if ((s.stufen[kompetenz] ?? 0) <= 1) s.id,
     ];
     final p = zustand.neuesPaket(titel: 'Förderpaket $kompetenz (${klasse.name})')
+      ..empfaenger[klasse.id] = ziel
       ..einstellung.anzahl = 4
       ..filter.umschalten('kompetenz', kompetenz)
       ..foerderung = Foerderung(klasse: klasse.id, kompetenz: kompetenz, schueler: ziel);
@@ -200,38 +202,74 @@ class KlasseSeite extends StatelessWidget {
     }
   }
 
-  /// "Paket an alle senden": ein vorhandenes Paket der ganzen Klasse zuweisen.
-  Future<void> _anAlle(BuildContext context) async {
-    final pakete = [
-      for (final p in zustand.daten.pakete)
-        if (p.plaetze.isNotEmpty && p.foerderung == null) p,
-    ];
-    if (pakete.isEmpty) {
-      await zeigeMeldung(context, 'Noch kein Paket mit Aufgaben. Unter „Pakete“ eines anlegen.', fehler: true);
-      return;
-    }
-    final gewaehlt = await showDialog<Paket>(
+  /// "Paket zuweisen": eigenes Paket wählen (Zuweisen-Ansicht mit allen
+  /// Personen der Klasse) oder ein neues erstellen (alle Personen der Klasse
+  /// als Empfänger\*innen).
+  Future<void> _zuweisen(BuildContext context) async {
+    final wahl = await showDialog<String>(
       context: context,
       builder: (d) => SimpleDialog(
-        title: Text('Paket an alle in ${klasse.name} senden'),
+        title: Text('Paket an ${klasse.name} zuweisen'),
         children: [
-          for (final p in pakete)
-            SimpleDialogOption(
-              key: ValueKey('an-alle-${p.id}'),
-              onPressed: () => Navigator.pop(d, p),
-              child: Text(
-                '${p.titel} · ${p.plaetze.length} Aufgaben'
-                '${p.gruppen > 1 ? ' · ${p.gruppen} Gruppen' : ''}',
-              ),
+          SimpleDialogOption(
+            key: const ValueKey('zuweisen-eigenes'),
+            onPressed: () => Navigator.pop(d, 'eigenes'),
+            child: const ListTile(
+              leading: Icon(Icons.inventory_2_outlined),
+              title: Text('Eigenes Paket wählen'),
+              subtitle: Text('Aus der Paketliste, danach Empfänger*innen, Gruppen und Abgabe prüfen'),
             ),
+          ),
+          SimpleDialogOption(
+            key: const ValueKey('zuweisen-neues'),
+            onPressed: () => Navigator.pop(d, 'neu'),
+            child: const ListTile(
+              leading: Icon(Icons.add),
+              title: Text('Neues Paket erstellen'),
+              subtitle: Text('Alle Personen der Klasse sind als Empfänger*innen eingetragen'),
+            ),
+          ),
         ],
       ),
     );
-    if (gewaehlt == null || !context.mounted) return;
-    final p = Paket.fromJson(gewaehlt.toJson());
-    final meldung = weiseZu(p, klasse, [for (final s in klasse.schueler) s.id]);
+    if (wahl == null || !context.mounted) return;
+    final alle = {for (final s in klasse.schueler) s.id};
+    if (wahl == 'eigenes') {
+      aktionen.oeffneZuweisen(auswahl: {klasse.id: alle});
+      return;
+    }
+    final p = zustand.neuesPaket(titel: 'Paket ${klasse.name}');
+    p.empfaenger[klasse.id] = [for (final s in klasse.schueler) s.id];
     final f = await zustand.speicherePaket(p);
-    if (context.mounted) await zeigeMeldung(context, f ?? meldung, fehler: f != null);
+    if (!context.mounted) return;
+    if (f != null) {
+      await zeigeMeldung(context, f, fehler: true);
+    } else {
+      aktionen.oeffnePaket(p.id);
+    }
+  }
+
+  /// Datum, an dem ein Förderpaket für [kompetenz] an alle Personen ging, die
+  /// es jetzt brauchen; dann verschwindet die Empfehlung.
+  DateTime? _foerderungVerschickt(String kompetenz) {
+    final betroffen = {
+      for (final s in klasse.schueler)
+        if ((s.stufen[kompetenz] ?? 0) <= 1) s.id,
+    };
+    DateTime? zuletzt;
+    for (final p in zustand.daten.pakete) {
+      final f = p.foerderung;
+      if (f == null || f.kompetenz != kompetenz || f.klasse != klasse.id) continue;
+      final erreicht = <String>{};
+      DateTime? am;
+      for (final z in p.zuweisungen) {
+        if (z.klasse != klasse.id) continue;
+        erreicht.addAll(z.verteilung.keys);
+        if (am == null || z.am.isAfter(am)) am = z.am;
+      }
+      if (am != null && erreicht.containsAll(betroffen) && (zuletzt == null || am.isAfter(zuletzt))) zuletzt = am;
+    }
+    return zuletzt;
   }
 
   @override
@@ -256,6 +294,12 @@ class KlasseSeite extends StatelessWidget {
           for (final p in zustand.daten.pakete)
             if (p.zuweisungen.any((z) => z.klasse == klasse.id)) p,
         ];
+        final zuweisungen = [
+          for (final p in pakete)
+            for (final z in p.zuweisungen)
+              if (z.klasse == klasse.id) (p, z),
+        ]..sort((a, b) => b.$2.am.compareTo(a.$2.am));
+        final jetzt = LehreZustand.uhr();
         final mittel = klasse.schueler.isEmpty
             ? 0.0
             : klasse.schueler.fold<double>(0, (n, s) => n + s.mittel) / klasse.schueler.length;
@@ -311,18 +355,7 @@ class KlasseSeite extends StatelessWidget {
                                         style: text.bodySmall,
                                       ),
                                     ),
-                                    SizedBox(
-                                      width: 120,
-                                      child: n == 0
-                                          ? const SizedBox.shrink()
-                                          : TextButton(
-                                              key: ValueKey('foerder-$k'),
-                                              onPressed: mitAufgaben.contains(k)
-                                                  ? () => _foerderpaket(context, k)
-                                                  : null,
-                                              child: Text(mitAufgaben.contains(k) ? 'Förderpaket' : 'keine Aufgaben'),
-                                            ),
-                                    ),
+                                    SizedBox(width: 120, child: _foerderZelle(context, k, n, mitAufgaben.contains(k))),
                                   ],
                                 ),
                               ),
@@ -335,29 +368,44 @@ class KlasseSeite extends StatelessWidget {
                       child: _Kasten(
                         titel: 'Zugewiesene Pakete',
                         aktion: FilledButton.icon(
-                          key: const ValueKey('an-alle-senden'),
-                          onPressed: () => _anAlle(context),
+                          key: const ValueKey('klasse-zuweisen'),
+                          onPressed: () => _zuweisen(context),
                           icon: const Icon(Icons.send_outlined, size: 18),
-                          label: const Text('Paket an alle senden'),
+                          label: const Text('Paket zuweisen'),
                         ),
-                        kind: pakete.isEmpty
-                            ? Text(
-                                'Noch keine. „Paket an alle senden“ oder im Paket-Editor „Zuweisen“.',
-                                style: text.bodySmall,
-                              )
+                        kind: zuweisungen.isEmpty
+                            ? Text('Noch keine. Mit „Paket zuweisen“ verschicken.', style: text.bodySmall)
                             : ListView(
                                 children: [
-                                  for (final p in pakete)
+                                  for (final (p, z) in zuweisungen)
                                     ListTile(
+                                      key: ValueKey('zuweisung-${p.id}-${z.am.microsecondsSinceEpoch}'),
                                       dense: true,
                                       contentPadding: EdgeInsets.zero,
                                       leading: Icon(
                                         p.foerderung == null ? Icons.inventory_2_outlined : Icons.healing_outlined,
                                         size: 20,
                                       ),
-                                      title: Text(p.titel),
-                                      subtitle: Text(_paketZeile(p)),
-                                      onTap: () => aktionen.oeffnePaket(p.id),
+                                      title: Text(p.anzeigeName(z.version)),
+                                      subtitle: Text(_zuweisungZeile(p, z, jetzt)),
+                                      trailing: const Icon(Icons.chevron_right),
+                                      onTap: () => aktionen.oeffne(
+                                        ZuweisungSeite(
+                                          zustand: zustand,
+                                          paket: p,
+                                          zuweisung: z,
+                                          klasse: klasse,
+                                          onPerson: (person, gruppe) => aktionen.oeffne(
+                                            PaketErgebnisSeite(
+                                              zustand: zustand,
+                                              klasse: klasse,
+                                              person: person,
+                                              paket: p,
+                                              gruppe: gruppe,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                 ],
                               ),
@@ -430,9 +478,7 @@ class KlasseSeite extends StatelessWidget {
                             Padding(padding: const EdgeInsets.all(8), child: Text('${s.aufgabenWoche}')),
                             Padding(
                               padding: const EdgeInsets.all(8),
-                              child: Text(
-                                '${pakete.where((p) => p.zuweisungen.any((z) => z.klasse == klasse.id && z.verteilung.containsKey(s.id))).length}',
-                              ),
+                              child: Text('${zuweisungen.where((x) => x.$2.verteilung.containsKey(s.id)).length}'),
                             ),
                           ],
                         ),
@@ -447,12 +493,34 @@ class KlasseSeite extends StatelessWidget {
     );
   }
 
-  String _paketZeile(Paket p) {
-    final z = p.zuweisungen.firstWhere((z) => z.klasse == klasse.id);
+  Widget _foerderZelle(BuildContext context, String k, int n, bool mitAufgaben) {
+    if (n == 0) return const SizedBox.shrink();
+    final am = _foerderungVerschickt(k);
+    if (am != null) {
+      return Text(
+        'verschickt am ${datumText(am)}',
+        key: ValueKey('foerder-verschickt-$k'),
+        textAlign: TextAlign.right,
+        style: Theme.of(context).textTheme.bodySmall,
+      );
+    }
+    return TextButton(
+      key: ValueKey('foerder-$k'),
+      onPressed: mitAufgaben ? () => _foerderpaket(context, k) : null,
+      child: Text(mitAufgaben ? 'Förderpaket' : 'keine Aufgaben'),
+    );
+  }
+
+  String _zuweisungZeile(Paket p, Zuweisung z, DateTime jetzt) {
+    final fertig = [
+      for (final id in z.verteilung.keys)
+        if (testFertig(id, p.id, z, jetzt).fertig) id,
+    ].length;
     return [
-      '${p.plaetze.length} Aufgaben',
-      if (p.gruppen > 1) '${p.gruppen} Gruppen',
+      'am ${datumText(z.am)}',
       z.verteilung.length == klasse.schueler.length ? 'an alle' : 'an ${z.verteilung.length} Personen',
+      if (z.abgabe != null) 'Abgabe ${datumText(z.abgabe!)}',
+      '$fertig/${z.verteilung.length} fertig',
     ].join(' · ');
   }
 
