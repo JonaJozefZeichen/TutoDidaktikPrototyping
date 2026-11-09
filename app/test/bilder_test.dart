@@ -49,7 +49,8 @@ void main() {
     LehreZustand.idErzeuger = (art) => '$art-${nr++}';
     addTearDown(() => LehreZustand.idErzeuger = vorher);
     LehreZustand.uhr = () => DateTime(2026, 11, 20, 10);
-    LehreZustand.codeZufall = () => Random(7);
+    final codes = Random(7);
+    LehreZustand.codeZufall = () => codes;
     addTearDown(() {
       LehreZustand.uhr = DateTime.now;
       LehreZustand.codeZufall = Random.new;
@@ -97,9 +98,13 @@ void main() {
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_detail.png'));
     await t.pump(const Duration(seconds: 6)); // Meldung ausblenden lassen
     await t.pumpAndSettle();
-    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Pakete')));
+    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Pakete erstellen')));
     await t.pumpAndSettle();
-    await t.tap(find.byKey(const ValueKey('paket-generieren')));
+    await t.tap(find.byKey(const ValueKey('paket-erstellen')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Generiertes Paket');
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_erstellen.png'));
+    await t.tap(find.byKey(const ValueKey('neues-paket-generator')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('generieren')));
     await t.pumpAndSettle();
@@ -111,6 +116,10 @@ void main() {
     await t.tap(find.byKey(const ValueKey('gruppen-mehr')));
     await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_gruppen.png'));
+    await t.tap(find.byKey(const ValueKey('paket-speichern')));
+    await t.pump(const Duration(seconds: 6));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_pakete.png'));
     await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Klassen')));
     await t.pumpAndSettle();
     await t.tap(

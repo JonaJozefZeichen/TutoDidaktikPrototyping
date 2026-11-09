@@ -190,6 +190,8 @@ class Paket {
     this.foerderung,
     this.code,
     this.version = 0,
+    this.generatorAn = true,
+    this.geholtPerCode,
     Map<String, List<String>>? empfaenger,
     StoreFilter? filter,
     List<Zuweisung>? zuweisungen,
@@ -221,6 +223,8 @@ class Paket {
         : null,
     code: j['code'] as String?,
     version: j['version'] as int? ?? 0,
+    generatorAn: j['generator_an'] != false,
+    geholtPerCode: j['geholt_per_code'] as String?,
     empfaenger: {
       for (final e in ((j['empfaenger'] as Map?) ?? const {}).entries)
         '${e.key}': [...(e.value as List).whereType<String>()],
@@ -246,6 +250,12 @@ class Paket {
 
   /// Zahl der verschickten Fassungen (0 = noch nie verschickt).
   int version;
+
+  /// Generator im Editor sichtbar; bei "selbst zusammenstellen" aus.
+  bool generatorAn;
+
+  /// Code, über den das Paket von einer anderen Lehrperson geholt wurde.
+  String? geholtPerCode;
 
   /// Vorgesehene Empfänger\*innen: Klasse → Personen. Belegt die
   /// Zuweisen-Ansicht vor.
@@ -287,6 +297,8 @@ class Paket {
     'foerderung': foerderung?.toJson(),
     'code': code,
     'version': version,
+    'generator_an': generatorAn,
+    'geholt_per_code': geholtPerCode,
     'empfaenger': empfaenger,
     'filter': filter.toJson(),
     'zuweisungen': [for (final z in zuweisungen) z.toJson()],
@@ -714,6 +726,7 @@ Paket paketKopie(Paket vorlage, {required String id, required String code, requi
     ..['version'] = 0
     ..['zuweisungen'] = []
     ..['empfaenger'] = {}
-    ..['foerderung'] = null;
+    ..['foerderung'] = null
+    ..['geholt_per_code'] = vorlage.code;
   return Paket.fromJson(j);
 }

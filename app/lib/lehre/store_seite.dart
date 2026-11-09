@@ -314,11 +314,12 @@ class _KatalogSeiteState extends State<KatalogSeite> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '„${p.titel}“ · ${p.plaetze.length} Aufgaben · ${minutenText(z.minuten(p.plaetze.map((x) => x.aufgabe)))}',
+              'Mit dem Katalog verbunden: „+ Ins Paket“ legt in „${p.titel}“ · ${p.plaetze.length} Aufgaben · '
+              '${minutenText(z.minuten(p.plaetze.map((x) => x.aufgabe)))}',
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          TextButton(onPressed: () => setState(() => z.offenesPaket = null), child: const Text('Schließen')),
+          TextButton(onPressed: () => setState(() => z.offenesPaket = null), child: const Text('Trennen')),
           FilledButton(
             key: const ValueKey('zum-paket'),
             onPressed: () => widget.aktionen.oeffnePaket(p.id),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tuto_didaktik/editor/vorschau.dart';
 import 'package:tuto_didaktik/lehre/bausteine.dart';
+import 'package:tuto_didaktik/lehre/merkliste_seite.dart';
 import 'package:tuto_didaktik/lehre/schueler_ansicht.dart';
 import 'package:tuto_didaktik/lehre/store_seite.dart';
 import 'package:tuto_didaktik/lehre/zustand.dart';
@@ -256,15 +257,15 @@ class KlasseSeite extends StatelessWidget {
       aktionen.oeffneZuweisen(auswahl: {klasse.id: alle});
       return;
     }
-    final p = zustand.neuesPaket(titel: 'Paket ${_k.name}');
-    p.empfaenger[klasse.id] = [for (final s in _k.schueler) s.id];
-    final f = await zustand.speicherePaket(p);
-    if (!context.mounted) return;
-    if (f != null) {
-      await zeigeMeldung(context, f, fehler: true);
-    } else {
-      aktionen.oeffnePaket(p.id);
-    }
+    final p = await neuesPaketDialog(
+      context,
+      zustand,
+      vorschlag: 'Paket ${_k.name}',
+      empfaenger: {
+        _k.id: [for (final s in _k.schueler) s.id],
+      },
+    );
+    if (p != null && context.mounted) aktionen.oeffnePaket(p.id);
   }
 
   /// Datum, an dem ein Förderpaket für [kompetenz] an alle Personen ging, die
@@ -697,7 +698,7 @@ class SchuelerinSeite extends StatelessWidget {
                               dense: true,
                               contentPadding: EdgeInsets.zero,
                               title: Text(p.anzeigeName(z.version)),
-                              subtitle: Text('Gruppe $gruppe · ${p.plaetze.length} Aufgaben'),
+                              subtitle: Text('${z.gruppen > 1 ? 'Gruppe $gruppe · ' : ''}${p.plaetze.length} Aufgaben'),
                               trailing: Text(_quote(z), style: text.bodySmall),
                               onTap: () => oeffne(
                                 PaketErgebnisSeite(
@@ -790,7 +791,8 @@ class _PaketErgebnisSeiteState extends State<PaketErgebnisSeite> {
               ),
               Expanded(
                 child: Text(
-                  '${widget.person.name} · ${widget.paket.titel} · Gruppe ${widget.gruppe}',
+                  '${widget.person.name} · ${widget.paket.anzeigeName(widget.zuweisung.version)}'
+                  '${widget.zuweisung.gruppen > 1 ? ' · Gruppe ${widget.gruppe}' : ''}',
                   style: text.titleMedium,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -878,10 +880,14 @@ class _PaketErgebnisSeiteState extends State<PaketErgebnisSeite> {
                 ],
               ),
               const SizedBox(height: 6),
-              if (!a.richtig && !a.selbstBewertet)
+              if (a.antwort.isEmpty && !a.richtig)
+                const Text('Antwort: „Weiß ich nicht“', style: TextStyle(color: fehlerRot))
+              else if (a.antwort.isNotEmpty)
                 Text(
-                  a.antwort.isEmpty ? 'Antwort: „Weiß ich nicht“' : 'Antwort: ${a.antwort}',
-                  style: const TextStyle(color: fehlerRot),
+                  a.selbstBewertet
+                      ? 'Antwort: ${a.antwort} (selbst bewertet: ${a.r >= 1 ? 'richtig' : (a.r > 0 ? 'teilweise' : 'falsch')})'
+                      : 'Antwort: ${a.antwort}',
+                  style: TextStyle(color: a.richtig ? const Color(0xFF1B6B32) : (a.selbstBewertet ? tinte : fehlerRot)),
                 ),
               if (a.fehlerbild != null) Text('Fehlerbild: ${a.fehlerbild}', style: text.bodySmall),
               if (loesung.isNotEmpty) Text('Lösung: $loesung', style: text.bodyMedium),

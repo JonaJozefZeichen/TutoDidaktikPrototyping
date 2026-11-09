@@ -162,7 +162,18 @@ class LehreZustand extends ChangeNotifier {
   }
 
   Paket neuesPaket({String titel = 'Neues Paket'}) =>
-      Paket(id: neueId('paket'), titel: titel, erstellt: uhr(), code: paketCode(codeZufall()));
+      Paket(id: neueId('paket'), titel: titel, erstellt: uhr(), code: freierCode());
+
+  /// Ein Paket-Code, den diese Lehrperson noch nicht verwendet.
+  String freierCode() {
+    final belegt = {for (final p in daten.pakete) ?p.code};
+    final r = codeZufall();
+    var c = paketCode(r);
+    while (belegt.contains(c)) {
+      c = paketCode(r);
+    }
+    return c;
+  }
 
   /// Uhr des Bereichs; Tests setzen eine feste Zeit.
   static DateTime Function() uhr = DateTime.now;
@@ -174,7 +185,7 @@ class LehreZustand extends ChangeNotifier {
   Future<(Paket?, String?)> holePerCode(String code) async {
     try {
       final vorlage = await api.geteiltesPaket(code.trim().toUpperCase());
-      final kopie = paketKopie(vorlage, id: neueId('paket'), code: paketCode(codeZufall()), jetzt: uhr());
+      final kopie = paketKopie(vorlage, id: neueId('paket'), code: freierCode(), jetzt: uhr());
       final f = await speicherePaket(kopie);
       return (f == null ? kopie : null, f);
     } on ApiFehler catch (e) {

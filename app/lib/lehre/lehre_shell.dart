@@ -219,7 +219,7 @@ class _LehreShellState extends State<LehreShell> {
                     NavigationRailDestination(icon: Icon(Icons.groups_outlined), label: Text('Klassen')),
                     NavigationRailDestination(icon: Icon(Icons.menu_book_outlined), label: Text('Katalog')),
                     NavigationRailDestination(icon: Icon(Icons.favorite_border), label: Text('Merkliste')),
-                    NavigationRailDestination(icon: Icon(Icons.inventory_2_outlined), label: Text('Pakete')),
+                    NavigationRailDestination(icon: Icon(Icons.post_add), label: Text('Pakete erstellen')),
                   ],
                 ),
                 const VerticalDivider(width: 1, color: linie),

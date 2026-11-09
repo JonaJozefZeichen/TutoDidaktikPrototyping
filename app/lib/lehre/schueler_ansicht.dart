@@ -39,6 +39,9 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
   String _antwortText = '';
   CheckResult? _ergebnis;
   int _hilfen = 0;
+
+  /// Selbst kontrollierte Formate: Musterlösung wird gezeigt, die Person bewertet sich.
+  bool _muster = false;
   final _uhr = Stopwatch();
   final _versuche = <SchuelerVersuch>[];
 
@@ -85,14 +88,17 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
     _antwortText = '';
     _ergebnis = null;
     _hilfen = 0;
+    _muster = false;
     _uhr
       ..reset()
       ..start();
   }
 
-  void _pruefe({bool weissNicht = false}) {
+  void _pruefe({bool weissNicht = false, double? selbst}) {
     final x = _items[_index];
-    final r = weissNicht ? const CheckResult(0) : const AnswerChecker().check(x.item, _antwort);
+    final r = weissNicht
+        ? const CheckResult(0)
+        : (selbst != null ? CheckResult(selbst) : const AnswerChecker().check(x.item, _antwort));
     _uhr.stop();
     setState(() {
       _ergebnis = r;
@@ -109,7 +115,7 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
           hilfen: _hilfen,
           sekunden: max(1, _uhr.elapsed.inSeconds),
           am: LehreZustand.uhr(),
-          selbstBewertet: !x.item.automatischGeprueft && !weissNicht,
+          selbstBewertet: selbst != null,
         ),
       );
     });
@@ -217,7 +223,10 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
         ),
         if (_bildschirm == _Bildschirm.loesen && _zuweisung != null) ...[
           const SizedBox(height: 12),
-          Text('Gruppe $_gruppe · Aufgabe ${_index + 1} von ${_items.length}', style: text.labelMedium),
+          Text(
+            '${(_zuweisung?.gruppen ?? 1) > 1 ? 'Gruppe $_gruppe · ' : ''}Aufgabe ${_index + 1} von ${_items.length}',
+            style: text.labelMedium,
+          ),
         ],
       ],
     );
@@ -418,11 +427,21 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text('Hilfe ${h.stufe}: ${h.text}', style: tokens.body(size: 14)),
                 ),
+              if (_muster && r == null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Musterlösung: ${loesungAlsText(item)}',
+                  key: const ValueKey('musterloesung'),
+                  style: tokens.body(size: 15, weight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text('Vergleiche mit deiner Antwort. Wie war es?', style: tokens.body(size: 14)),
+              ],
               if (r != null) ...[
                 const SizedBox(height: 12),
                 Text(
-                  !item.automatischGeprueft && _antwortText.isNotEmpty
-                      ? 'Vergleiche mit der Lösung: ${loesungAlsText(item)}'
+                  _muster
+                      ? 'Selbst bewertet: ${r.r >= 1 ? 'richtig' : (r.r > 0 ? 'teilweise' : 'falsch')}'
                       : r.richtig
                       ? 'Richtig!'
                       : 'Leider nicht. Lösung: ${loesungAlsText(item)}',
@@ -435,15 +454,41 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 6, 14, 16),
-          child: r == null
+          child: r == null && _muster
+              ? Row(
+                  children: [
+                    for (final (wert, titel) in [(1.0, 'Richtig'), (0.5, 'Teilweise'), (0.0, 'Falsch')])
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          child: OutlinedButton(
+                            key: ValueKey('selbst-$titel'),
+                            onPressed: () => _pruefe(selbst: wert),
+                            child: Text(titel),
+                          ),
+                        ),
+                      ),
+                  ],
+                )
+              : r == null
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    FilledButton(
-                      key: const ValueKey('pruefen'),
-                      onPressed: _antwortText.isEmpty && _antwort == null ? null : () => _pruefe(),
-                      child: Text(item.automatischGeprueft ? 'Prüfen' : 'Fertig'),
-                    ),
+                    if (item.automatischGeprueft)
+                      FilledButton(
+                        key: const ValueKey('pruefen'),
+                        onPressed: _antwortText.isEmpty && _antwort == null ? null : () => _pruefe(),
+                        child: const Text('Prüfen'),
+                      )
+                    else
+                      FilledButton(
+                        key: const ValueKey('loesung-ansehen'),
+                        onPressed: () {
+                          _uhr.stop();
+                          setState(() => _muster = true);
+                        },
+                        child: const Text('Lösung ansehen'),
+                      ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

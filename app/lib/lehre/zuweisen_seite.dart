@@ -508,7 +508,7 @@ class _ZuweisungSeiteState extends State<ZuweisungSeite> {
           child: Text(
             'Verschickt am ${datumText(zuweisung.am)} · '
             '${zuweisung.abgabe == null ? 'ohne Abgabedatum' : 'Abgabe bis ${datumText(zuweisung.abgabe!)}'} · '
-            '${zuweisung.gruppen == 1 ? '1 Gruppe' : '${zuweisung.gruppen} Gruppen'} · Testklasse',
+            '${zuweisung.gruppen == 1 ? 'alle dieselben Aufgaben' : '${zuweisung.gruppen} Gruppen'} · Testklasse',
             style: const TextStyle(fontSize: 12, color: hinweisGelb, fontWeight: FontWeight.w600),
           ),
         ),
@@ -526,7 +526,7 @@ class _ZuweisungSeiteState extends State<ZuweisungSeite> {
                   child: ListTile(
                     key: ValueKey('zuweisung-person-${s.id}'),
                     title: Text(s.name),
-                    subtitle: Text('Gruppe ${zuweisung.verteilung[s.id]}'),
+                    subtitle: zuweisung.gruppen > 1 ? Text('Gruppe ${zuweisung.verteilung[s.id]}') : null,
                     trailing: _status(stand[s.id]!),
                     onTap: stand[s.id]!.fertig ? () => widget.onPerson(s, zuweisung.verteilung[s.id]!) : null,
                   ),

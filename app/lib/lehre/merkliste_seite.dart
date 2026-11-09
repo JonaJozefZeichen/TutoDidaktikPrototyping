@@ -75,7 +75,7 @@ class _MerklisteSeiteState extends State<MerklisteSeite> {
 
   /// Neues Paket mit genau den Aufgaben des Ordners.
   Future<void> _alsPaket(MerkOrdner o) async {
-    final p = z.neuesPaket(titel: o.name);
+    final p = z.neuesPaket(titel: o.name)..generatorAn = false;
     for (final id in o.aufgaben) {
       final a = z.nachId[id];
       if (a != null) p.plaetze.add(PaketPlatz.von(a));
@@ -250,29 +250,122 @@ class _MerklisteSeiteState extends State<MerklisteSeite> {
   }
 }
 
-/// Alle Pakete der Lehrperson.
-class PaketeSeite extends StatelessWidget {
+/// "Paket erstellen": erst den Namen, dann die Wahl, ob selbst
+/// zusammengestellt oder mit dem Generator. Legt das Paket an und gibt es zurück.
+Future<Paket?> neuesPaketDialog(
+  BuildContext context,
+  LehreZustand zustand, {
+  String vorschlag = '',
+  Map<String, List<String>>? empfaenger,
+}) async {
+  final name = TextEditingController(text: vorschlag);
+  final weg = await showDialog<bool>(
+    context: context,
+    builder: (d) => AlertDialog(
+      title: const Text('Paket erstellen'),
+      content: SizedBox(
+        width: 440,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              key: const ValueKey('neues-paket-name'),
+              controller: name,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Name des Pakets',
+                hintText: 'z. B. Wiederholung Bruchrechnen',
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Wie willst du die Aufgaben zusammenstellen?'),
+            const SizedBox(height: 8),
+            for (final (generator, icon, titel, text) in [
+              (false, Icons.touch_app_outlined, 'Selbst zusammenstellen', 'Aufgaben aus Katalog und Merkliste wählen'),
+              (
+                true,
+                Icons.casino_outlined,
+                'Mit Generator',
+                'Tuto schlägt passende Aufgaben vor, du sperrst und würfelst neu',
+              ),
+            ])
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: const BorderSide(color: linie),
+                ),
+                child: ListTile(
+                  key: ValueKey(generator ? 'neues-paket-generator' : 'neues-paket-selbst'),
+                  leading: Icon(icon, color: tutoBlau),
+                  title: Text(titel),
+                  subtitle: Text(text),
+                  onTap: () => Navigator.pop(d, generator),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Abbrechen'))],
+    ),
+  );
+  if (weg == null || !context.mounted) return null;
+  final p = zustand.neuesPaket(titel: name.text.trim().isEmpty ? 'Neues Paket' : name.text.trim())..generatorAn = weg;
+  if (empfaenger != null) p.empfaenger.addAll(empfaenger);
+  final f = await zustand.speicherePaket(p);
+  if (!context.mounted) return null;
+  if (f != null) {
+    await zeigeMeldung(context, f, fehler: true);
+    return null;
+  }
+  return p;
+}
+
+enum _PaketFilter {
+  alle('Alle'),
+  eigene('Eigene'),
+  foerder('Förderpakete'),
+  geteilt('Per Code geholt');
+
+  const _PaketFilter(this.bezeichnung);
+  final String bezeichnung;
+
+  bool passt(Paket p) => switch (this) {
+    alle => true,
+    eigene => p.foerderung == null && p.geholtPerCode == null,
+    foerder => p.foerderung != null,
+    geteilt => p.geholtPerCode != null,
+  };
+}
+
+/// Pakete erstellen und verwalten.
+class PaketeSeite extends StatefulWidget {
   const PaketeSeite({super.key, required this.zustand, required this.aktionen});
 
   final LehreZustand zustand;
   final LehreAktionen aktionen;
 
-  Future<void> _neu(BuildContext context, {required bool generieren}) async {
-    final p = zustand.neuesPaket(titel: generieren ? 'Generiertes Paket' : 'Neues Paket');
-    final f = await zustand.speicherePaket(p);
-    if (!context.mounted) return;
-    if (f != null) {
-      await zeigeMeldung(context, f, fehler: true);
-      return;
-    }
-    aktionen.oeffnePaket(p.id);
+  @override
+  State<PaketeSeite> createState() => _PaketeSeiteState();
+}
+
+class _PaketeSeiteState extends State<PaketeSeite> {
+  _PaketFilter _filter = _PaketFilter.alle;
+
+  LehreZustand get zustand => widget.zustand;
+  LehreAktionen get aktionen => widget.aktionen;
+
+  Future<void> _neu() async {
+    final p = await neuesPaketDialog(context, zustand);
+    if (p != null) aktionen.oeffnePaket(p.id);
   }
 
-  Future<void> _perCode(BuildContext context) async {
+  Future<void> _perCode() async {
     final code = await frageText(context, titel: 'Paket per Code holen', hinweis: 'z. B. TUTO-7K3F-9QX');
-    if (code == null || !context.mounted) return;
+    if (code == null || !mounted) return;
     final (p, f) = await zustand.holePerCode(code);
-    if (!context.mounted) return;
+    if (!mounted) return;
     if (p == null) {
       await zeigeMeldung(context, f ?? 'Unbekannter Fehler', fehler: true);
       return;
@@ -286,104 +379,130 @@ class PaketeSeite extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     return ListenableBuilder(
       listenable: zustand,
-      builder: (context, _) => ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              FilledButton.icon(
-                key: const ValueKey('pakete-zuweisen'),
-                onPressed: () => aktionen.oeffneZuweisen(),
-                icon: const Icon(Icons.send_outlined, size: 18),
-                label: const Text('Pakete zuweisen'),
-              ),
-              OutlinedButton.icon(
-                key: const ValueKey('paket-per-code'),
-                onPressed: () => _perCode(context),
-                icon: const Icon(Icons.qr_code_2, size: 18),
-                label: const Text('Paket per Code holen'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text('Aufgabenpakete', style: text.titleLarge),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                key: const ValueKey('paket-generieren'),
-                onPressed: () => _neu(context, generieren: true),
-                icon: const Icon(Icons.casino_outlined, size: 18),
-                label: const Text('Paket generieren'),
-              ),
-              OutlinedButton.icon(
-                key: const ValueKey('paket-leer'),
-                onPressed: () => _neu(context, generieren: false),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Leer starten (per Hand)'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Generieren würfelt passende Aufgaben, einzelne Plätze lassen sich sperren und neu würfeln. '
-            'Per Hand kommen die Aufgaben aus Merkliste oder Katalog. Verschickt wird über „Pakete zuweisen“.',
-            style: text.bodySmall,
-          ),
-          const SizedBox(height: 16),
-          if (zustand.daten.pakete.isEmpty)
-            Text('Noch keine Pakete.', style: text.bodySmall)
-          else
-            for (final p in zustand.daten.pakete)
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: linie),
+      builder: (context, _) {
+        final pakete = [
+          for (final p in zustand.daten.pakete)
+            if (_filter.passt(p)) p,
+        ];
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text('Aufgabenpakete', style: text.titleLarge),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  key: const ValueKey('paket-erstellen'),
+                  onPressed: _neu,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Paket erstellen'),
                 ),
-                child: ListTile(
-                  key: ValueKey('paket-${p.id}'),
-                  leading: const Icon(Icons.inventory_2_outlined, color: tutoBlau),
-                  title: Text(p.anzeigeName()),
-                  subtitle: Text(
-                    [
-                      ?p.code,
-                      '${p.plaetze.length} Aufgaben',
-                      minutenText(zustand.minuten(p.plaetze.map((x) => x.aufgabe))),
-                      if (p.gruppen > 1) '${p.gruppen} Gruppen',
-                      if (p.foerderung != null) 'Förderpaket',
-                      if (p.zuweisungen.isNotEmpty)
-                        'zugewiesen: ${{for (final z in p.zuweisungen) _klassenName(z.klasse)}.join(', ')}',
-                    ].join(' · '),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextButton.icon(
-                        key: ValueKey('paket-zuweisen-${p.id}'),
-                        onPressed: p.plaetze.isEmpty ? null : () => aktionen.oeffneZuweisen(paketId: p.id),
-                        icon: const Icon(Icons.send_outlined, size: 18),
-                        label: const Text('Zuweisen'),
-                      ),
-                      IconButton(
-                        tooltip: 'Paket löschen',
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () async {
-                          final f = await zustand.loeschePaket(p.id);
-                          if (f != null && context.mounted) await zeigeMeldung(context, f, fehler: true);
-                        },
-                      ),
-                    ],
-                  ),
-                  onTap: () => aktionen.oeffnePaket(p.id),
+                OutlinedButton.icon(
+                  key: const ValueKey('pakete-zuweisen'),
+                  onPressed: () => aktionen.oeffneZuweisen(),
+                  icon: const Icon(Icons.send_outlined, size: 18),
+                  label: const Text('Pakete zuweisen'),
                 ),
-              ),
-        ],
+                OutlinedButton.icon(
+                  key: const ValueKey('paket-per-code'),
+                  onPressed: _perCode,
+                  icon: const Icon(Icons.qr_code_2, size: 18),
+                  label: const Text('Paket per Code holen'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SegmentedButton<_PaketFilter>(
+              key: const ValueKey('paket-filter'),
+              showSelectedIcon: false,
+              segments: [
+                for (final f in _PaketFilter.values)
+                  ButtonSegment(
+                    value: f,
+                    label: Text('${f.bezeichnung} (${zustand.daten.pakete.where(f.passt).length})'),
+                  ),
+              ],
+              selected: {_filter},
+              onSelectionChanged: (x) => setState(() => _filter = x.first),
+            ),
+            const SizedBox(height: 4),
+            Text('Pakete des Tuto-Teams kommen später als eigene Gruppe dazu.', style: text.bodySmall),
+            const SizedBox(height: 12),
+            if (pakete.isEmpty)
+              Text(
+                zustand.daten.pakete.isEmpty
+                    ? 'Noch keine Pakete. Mit „Paket erstellen“ anfangen.'
+                    : 'Keine Pakete in dieser Auswahl.',
+                style: text.bodySmall,
+              )
+            else
+              for (final p in pakete) _karte(context, p),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _karte(BuildContext context, Paket p) {
+    final verbunden = zustand.offenesPaket == p.id;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: verbunden ? tutoBlau : linie, width: verbunden ? 2 : 1),
+      ),
+      child: ListTile(
+        key: ValueKey('paket-${p.id}'),
+        leading: Icon(
+          p.foerderung != null
+              ? Icons.healing_outlined
+              : (p.geholtPerCode != null ? Icons.qr_code_2 : Icons.inventory_2_outlined),
+          color: tutoBlau,
+        ),
+        title: Row(
+          children: [
+            Flexible(child: Text(p.anzeigeName(), overflow: TextOverflow.ellipsis)),
+            if (verbunden) ...[
+              const SizedBox(width: 8),
+              const Marke('mit Katalog verbunden', farbe: tutoBlau, grund: Color(0xFFE4ECFA), icon: Icons.link),
+            ],
+          ],
+        ),
+        subtitle: Text(
+          [
+            ?p.code,
+            '${p.plaetze.length} Aufgaben',
+            minutenText(zustand.minuten(p.plaetze.map((x) => x.aufgabe))),
+            if (p.gruppen > 1) '${p.gruppen} Gruppen',
+            if (p.foerderung != null) 'Förderpaket',
+            if (p.geholtPerCode != null) 'geholt per Code',
+            if (p.zuweisungen.isNotEmpty)
+              'zugewiesen: ${{for (final z in p.zuweisungen) _klassenName(z.klasse)}.join(', ')}',
+          ].join(' · '),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton.icon(
+              key: ValueKey('paket-zuweisen-${p.id}'),
+              onPressed: p.plaetze.isEmpty ? null : () => aktionen.oeffneZuweisen(paketId: p.id),
+              icon: const Icon(Icons.send_outlined, size: 18),
+              label: const Text('Zuweisen'),
+            ),
+            IconButton(
+              tooltip: 'Paket löschen',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () async {
+                final f = await zustand.loeschePaket(p.id);
+                if (f != null && context.mounted) await zeigeMeldung(context, f, fehler: true);
+              },
+            ),
+          ],
+        ),
+        onTap: () => aktionen.oeffnePaket(p.id),
       ),
     );
   }

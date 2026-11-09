@@ -99,8 +99,11 @@ void main() {
 
   testWidgets('Generator: generieren, sperren, neu würfeln, Gruppen, zuweisen', (t) async {
     await starteAls(t, testApi(), 'lehrperson-nachhilfe');
-    await seite(t, 'Pakete');
-    await t.tap(find.byKey(const ValueKey('paket-generieren')));
+    await seite(t, 'Pakete erstellen');
+    await t.tap(find.byKey(const ValueKey('paket-erstellen')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Generiertes Paket');
+    await t.tap(find.byKey(const ValueKey('neues-paket-generator')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('generieren')));
     await t.pumpAndSettle();
@@ -173,8 +176,11 @@ void main() {
 
   testWidgets('Paket-Code: eine andere Lehrperson holt eine Kopie', (t) async {
     await starteAls(t, testApi(), 'lehrperson-schule');
-    await seite(t, 'Pakete');
-    await t.tap(find.byKey(const ValueKey('paket-generieren')));
+    await seite(t, 'Pakete erstellen');
+    await t.tap(find.byKey(const ValueKey('paket-erstellen')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Generiertes Paket');
+    await t.tap(find.byKey(const ValueKey('neues-paket-generator')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('generieren')));
     await t.pumpAndSettle();
@@ -187,7 +193,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('person-lehrperson-nachhilfe')));
     await t.pumpAndSettle();
-    await seite(t, 'Pakete');
+    await seite(t, 'Pakete erstellen');
     await t.tap(find.byKey(const ValueKey('paket-per-code')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const ValueKey('text-dialog-feld')), code.toLowerCase());
@@ -206,8 +212,11 @@ void main() {
     expect(find.text('Testklasse'), findsOneWidget);
     expect(mitSchluessel('klasse-'), findsNWidgets(1));
 
-    await seite(t, 'Pakete');
-    await t.tap(find.byKey(const ValueKey('paket-generieren')));
+    await seite(t, 'Pakete erstellen');
+    await t.tap(find.byKey(const ValueKey('paket-erstellen')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Generiertes Paket');
+    await t.tap(find.byKey(const ValueKey('neues-paket-generator')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('generieren')));
     await t.pumpAndSettle();
@@ -277,6 +286,104 @@ void main() {
     await t.tap(foerder.first);
     await t.pumpAndSettle();
     expect(find.textContaining('für 1 Person der Testklasse'), findsOneWidget);
+  });
+
+  testWidgets('Paket erstellen: Name und Weg wählen, Generator per Menü, Speichern, Filter', (t) async {
+    await starteAls(t, testApi(), 'lehrperson-schule');
+    await seite(t, 'Pakete erstellen');
+    await t.tap(find.byKey(const ValueKey('paket-erstellen')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Bruchrechnen');
+    await t.tap(find.byKey(const ValueKey('neues-paket-selbst')));
+    await t.pumpAndSettle();
+    // Selbst zusammenstellen: kein Generator, keine Schüler*innen-Auswahl.
+    expect(find.byKey(const ValueKey('generieren')), findsNothing);
+    expect(find.byKey(const ValueKey('tab-schueler')), findsNothing);
+    await t.tap(find.byKey(const ValueKey('paket-menue')));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Generator einblenden'));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('generieren')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('generieren')));
+    await t.pumpAndSettle();
+    // Mit dem Katalog verbinden zeigt das deutlich an.
+    await t.tap(find.byKey(const ValueKey('als-warenkorb')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('katalog-hinweis')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('paket-speichern')));
+    await t.pumpAndSettle();
+    expect(find.textContaining('gespeichert'), findsOneWidget);
+    expect(find.text('mit Katalog verbunden'), findsOneWidget);
+    expect(find.text('Eigene (1)'), findsOneWidget);
+    expect(find.text('Förderpakete (0)'), findsOneWidget);
+    await t.tap(find.text('Förderpakete (0)'));
+    await t.pumpAndSettle();
+    expect(find.text('Keine Pakete in dieser Auswahl.'), findsOneWidget);
+  });
+
+  testWidgets('Emulator: selbst kontrollierte Aufgabe blockiert nicht, Eingabe ist für die Lehrperson sichtbar', (
+    t,
+  ) async {
+    await starteAls(t, testApi(), 'lehrperson-schule');
+    await seite(t, 'Pakete erstellen');
+    await t.tap(find.byKey(const ValueKey('paket-erstellen')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Offen');
+    await t.tap(find.byKey(const ValueKey('neues-paket-selbst')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('aufgabe-hinzufuegen')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('wahl-alle')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const ValueKey('wahl-suche')), 'tuto-ag5-01-a03');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('waehlen-tuto-ag5-01-a03')).last);
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('paket-speichern')));
+    await t.pumpAndSettle();
+
+    await seite(t, 'Klassen');
+    await t.tap(mitSchluessel('klasse-lehrperson').first);
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('klasse-zuweisen')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-eigenes')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-paket')));
+    await t.pumpAndSettle();
+    await t.tap(find.textContaining('Offen ·').last);
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-pruefen')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('zuweisen-senden')));
+    await t.pumpAndSettle();
+
+    await t.tap(find.byKey(const ValueKey('klasse-schueler-ansicht')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('postfach')));
+    await t.pumpAndSettle();
+    await t.tap(mitSchluessel('post-').first);
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextField).last, 'irrational');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('loesung-ansehen')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('musterloesung')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('selbst-Richtig')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('weiter')));
+    await t.pumpAndSettle();
+    expect(find.text('1 von 1 richtig'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('ansicht-zurueck')));
+    await t.pumpAndSettle();
+
+    await t.tap(mitSchluessel('zuweisung-paket').first);
+    await t.pumpAndSettle();
+    expect(find.text('Gruppe A'), findsNothing);
+    expect(find.textContaining('alle dieselben Aufgaben'), findsOneWidget);
+    await t.tap(mitSchluessel('zuweisung-person-').first);
+    await t.pumpAndSettle();
+    expect(find.textContaining('irrational (selbst bewertet: richtig)'), findsOneWidget);
   });
 
   testWidgets('PDF: Blätter pro Gruppe mit Lösungen, Copyright und SRDP-Kennzeichnung', (t) async {

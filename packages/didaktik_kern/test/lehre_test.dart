@@ -416,6 +416,10 @@ void main() {
       expect(kopie.zuweisungen, isEmpty);
       expect(kopie.empfaenger, isEmpty);
       expect(kopie.code, isNot(code));
+      expect(kopie.geholtPerCode, code);
+      final roh = Paket.fromJson(jsonDecode(jsonEncode((p..generatorAn = false).toJson())) as Map<String, dynamic>);
+      expect(roh.generatorAn, isFalse);
+      expect(Paket(id: 'x', titel: 'x', erstellt: DateTime(2026)).generatorAn, isTrue);
       expect(() => l.geteiltesPaket(andere, 'TUTO-XXXX-XXX'), throwsA(isA<RegelFehler>()));
       expect(() => l.geteiltesPaket(didaktik, code), throwsA(isA<RegelFehler>()));
     });

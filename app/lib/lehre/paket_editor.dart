@@ -11,7 +11,6 @@ import 'package:tuto_didaktik/lehre/bausteine.dart';
 import 'package:tuto_didaktik/lehre/paket_pdf.dart';
 import 'package:tuto_didaktik/lehre/store_seite.dart';
 import 'package:tuto_didaktik/lehre/zustand.dart';
-import 'package:tuto_didaktik/lehre/zuweisen_seite.dart';
 import 'package:tuto_didaktik/thema.dart';
 
 /// Paket-Editor: Plätze per Hand füllen oder generieren, einzelne Plätze
@@ -33,7 +32,7 @@ class PaketEditor extends StatefulWidget {
 
 class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStateMixin {
   late Paket _p;
-  late final TabController _tabs = TabController(length: 3, vsync: this);
+  late final TabController _tabs = TabController(length: 2, vsync: this);
   late final TextEditingController _titel;
   final _zufall = PaketEditor.zufall();
 
@@ -295,7 +294,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                         icon: const Icon(Icons.arrow_back),
                       ),
                       SizedBox(
-                        width: 320,
+                        width: 260,
                         child: TextField(
                           key: const ValueKey('paket-titel'),
                           controller: _titel,
@@ -334,9 +333,14 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       const Spacer(),
                       TextButton.icon(
                         key: const ValueKey('als-warenkorb'),
-                        onPressed: z.offenesPaket == _p.id ? null : () => setState(() => z.offenesPaket = _p.id),
-                        icon: Icon(z.offenesPaket == _p.id ? Icons.check : Icons.add_shopping_cart, size: 18),
-                        label: Text(z.offenesPaket == _p.id ? 'Katalog legt hier hinein' : 'Aus dem Katalog befüllen'),
+                        onPressed: () => setState(() => z.offenesPaket = z.offenesPaket == _p.id ? null : _p.id),
+                        style: z.offenesPaket == _p.id
+                            ? TextButton.styleFrom(backgroundColor: const Color(0xFFE4ECFA))
+                            : null,
+                        icon: Icon(z.offenesPaket == _p.id ? Icons.link : Icons.add_shopping_cart, size: 18),
+                        label: Text(
+                          z.offenesPaket == _p.id ? 'Katalog verbunden' : 'Katalog verbinden',
+                        ),
                       ),
                       const SizedBox(width: 4),
                       OutlinedButton.icon(
@@ -345,8 +349,50 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                         icon: const Icon(Icons.print_outlined, size: 18),
                         label: const Text('Drucken / PDF'),
                       ),
+                      PopupMenuButton<String>(
+                        key: const ValueKey('paket-menue'),
+                        tooltip: 'Weitere Optionen',
+                        icon: const Icon(Icons.more_vert),
+                        itemBuilder: (_) => [
+                          PopupMenuItem(
+                            key: const ValueKey('menue-generator'),
+                            value: 'generator',
+                            child: Text(_p.generatorAn ? 'Generator ausblenden' : 'Generator einblenden'),
+                          ),
+                        ],
+                        onSelected: (v) {
+                          if (v == 'generator') {
+                            setState(() => _p.generatorAn = !_p.generatorAn);
+                            _speichere();
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        key: const ValueKey('paket-speichern'),
+                        onPressed: () async {
+                          await _speichere();
+                          if (!context.mounted) return;
+                          await zeigeMeldung(context, '„${_p.titel}“ gespeichert');
+                          if (context.mounted) await Navigator.of(context).maybePop();
+                        },
+                        icon: const Icon(Icons.check, size: 18),
+                        label: const Text('Speichern'),
+                      ),
                     ],
                   ),
+                  if (z.offenesPaket == _p.id)
+                    Container(
+                      key: const ValueKey('katalog-hinweis'),
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: const Color(0xFFE4ECFA), borderRadius: BorderRadius.circular(6)),
+                      child: const Text(
+                        'Mit dem Katalog verbunden: „+ Ins Paket“ im Katalog und in der Merkliste legt Aufgaben in dieses Paket.',
+                        style: TextStyle(color: tutoBlau, fontWeight: FontWeight.w600),
+                      ),
+                    ),
                   if (_p.foerderung case final f?)
                     Container(
                       key: const ValueKey('foerder-hinweis'),
@@ -372,10 +418,6 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                         key: const ValueKey('tab-gruppen'),
                         text: _p.gruppen == 1 ? 'Gruppen' : 'Gruppen (${_p.gruppen})',
                       ),
-                      Tab(
-                        key: const ValueKey('tab-schueler'),
-                        text: 'Schüler*innen (${_p.empfaenger.values.fold(0, (n, l) => n + l.length)})',
-                      ),
                     ],
                   ),
                 ],
@@ -393,11 +435,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       Expanded(
                         child: TabBarView(
                           controller: _tabs,
-                          children: [
-                            _aufgabenTab(context, groesse.maxWidth),
-                            _gruppenTab(context),
-                            _schuelerTab(context),
-                          ],
+                          children: [_aufgabenTab(context, groesse.maxWidth), _gruppenTab(context)],
                         ),
                       ),
                       if (mitVorschau)
@@ -425,16 +463,17 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Material(
-          color: Colors.white,
-          child: Container(
-            width: 300,
-            decoration: const BoxDecoration(
-              border: Border(right: BorderSide(color: linie)),
+        if (_p.generatorAn)
+          Material(
+            color: Colors.white,
+            child: Container(
+              width: 300,
+              decoration: const BoxDecoration(
+                border: Border(right: BorderSide(color: linie)),
+              ),
+              child: _generatorSpalte(context),
             ),
-            child: _generatorSpalte(context),
           ),
-        ),
         Expanded(child: _plaetzeListe(context)),
       ],
     );
@@ -977,49 +1016,6 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
           ],
         ),
       ),
-    );
-  }
-
-  // --- Tab Schüler*innen ---
-
-  late final Map<String, Set<String>> _empfaengerAuswahl = {
-    for (final e in _p.empfaenger.entries) e.key: {...e.value},
-  };
-
-  Widget _schuelerTab(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text('Wer das Paket bekommen soll', style: text.titleMedium),
-        const SizedBox(height: 4),
-        Text(
-          'Hinzufügen oder entfernen, auch aus mehreren Klassen. Verschickt wird über „Pakete zuweisen“; '
-          'dort sind diese Personen vorausgewählt und lassen sich vor dem Senden noch einmal prüfen.',
-          style: text.bodySmall,
-        ),
-        const SizedBox(height: 8),
-        KlassenBaum(
-          key: const ValueKey('editor-baum'),
-          klassen: z.klassen,
-          auswahl: _empfaengerAuswahl,
-          onChanged: () {
-            setState(() {
-              _p.empfaenger
-                ..clear()
-                ..addAll({
-                  for (final k in z.klassen)
-                    if (_empfaengerAuswahl[k.id]?.isNotEmpty ?? false)
-                      k.id: [
-                        for (final s in k.schueler)
-                          if (_empfaengerAuswahl[k.id]!.contains(s.id)) s.id,
-                      ],
-                });
-            });
-            _speichere();
-          },
-        ),
-      ],
     );
   }
 
