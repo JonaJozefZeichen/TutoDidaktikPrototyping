@@ -17,6 +17,11 @@ for arg in "$@"; do
         mv server/data/bestand.json "$ZIEL"
         echo "Testdaten gesichert: $ZIEL"
       fi
+      if [ -f server/data/lehrbereich.json ]; then
+        ZIEL="server/data/sicherung-lehrbereich-$(date +%Y%m%d-%H%M%S).json"
+        mv server/data/lehrbereich.json "$ZIEL"
+        echo "Daten der Lehrpersonen gesichert: $ZIEL"
+      fi
       ;;
     *) echo "Unbekannte Option: $arg"; exit 1 ;;
   esac

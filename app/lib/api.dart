@@ -101,6 +101,24 @@ class Api {
       AufgabeDetail.fromJson(await _post('/aufgaben/${_id(id)}/wiederherstellen', {'nr': nr}) as Map<String, dynamic>);
 
   Future<Map<String, dynamic>> importiere(String json) async => await _post('/import', json) as Map<String, dynamic>;
+
+  // --- Bereich für Lehrende ---
+
+  /// Aufgaben für den Store; [auchUnfreigegebene] nur im Teststand.
+  Future<List<StoreAufgabe>> storeAufgaben({bool auchUnfreigegebene = false}) async => [
+    for (final z in await _get(auchUnfreigegebene ? '/lehre/aufgaben/test' : '/lehre/aufgaben') as List)
+      StoreAufgabe.aus(
+        (z as Map)['id'] as String,
+        (z['inhalt'] as Map).cast<String, dynamic>(),
+        fassung: z['fassung'] as int,
+        status: z['status'] as String,
+      ),
+  ];
+
+  Future<LehrDaten> lehrDaten() async => LehrDaten.fromJson(await _get('/lehre/daten') as Map<String, dynamic>);
+
+  Future<LehrDaten> speichereLehrDaten(LehrDaten d) async =>
+      LehrDaten.fromJson(await _post('/lehre/daten', d.toJson()) as Map<String, dynamic>);
 }
 
 class Stammdaten {

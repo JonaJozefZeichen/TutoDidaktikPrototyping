@@ -8,7 +8,8 @@ import 'dart:io';
 import 'package:didaktik_kern/didaktik_kern.dart';
 import 'package:shelf/shelf.dart';
 
-/// Hält den Bestand und schreibt ihn nach jeder Änderung atomar in eine Datei.
+/// Hält den Bestand und die Ablagen der Lehrpersonen und schreibt beide nach
+/// jeder Änderung atomar in je eine Datei (`bestand.json`, `lehrbereich.json`).
 class Speicher {
   Speicher(this.datei, {required PruefKontext kontext})
     : bestand = Bestand(
@@ -16,16 +17,28 @@ class Speicher {
         eintraege: datei.existsSync()
             ? Bestand.eintraegeAusJson(jsonDecode(datei.readAsStringSync()) as Map<String, dynamic>)
             : null,
-      );
+      ),
+      lehre = _lehreLaden(File('${datei.parent.path}/lehrbereich.json'));
 
   final File datei;
   final Bestand bestand;
+  final Lehrbereich lehre;
+
+  File get lehreDatei => File('${datei.parent.path}/lehrbereich.json');
+
+  static Lehrbereich _lehreLaden(File f) =>
+      f.existsSync() ? Lehrbereich.fromJson(jsonDecode(f.readAsStringSync()) as Map<String, dynamic>) : Lehrbereich();
 
   void sichern() {
-    datei.parent.createSync(recursive: true);
-    final tmp = File('${datei.path}.tmp');
-    tmp.writeAsStringSync(jsonEncode(bestand.toJson()), flush: true);
-    tmp.renameSync(datei.path);
+    _schreibe(datei, bestand.toJson());
+    _schreibe(lehreDatei, lehre.toJson());
+  }
+
+  static void _schreibe(File ziel, Object daten) {
+    ziel.parent.createSync(recursive: true);
+    final tmp = File('${ziel.path}.tmp');
+    tmp.writeAsStringSync(jsonEncode(daten), flush: true);
+    tmp.renameSync(ziel.path);
   }
 }
 
@@ -73,7 +86,7 @@ Middleware _nurLokaleHerkunft() => (inner) => (request) async {
 };
 
 Handler baueApi(Speicher s, Stammlisten listen) {
-  final schnittstelle = Schnittstelle(s.bestand, listen, nachAenderung: s.sichern);
+  final schnittstelle = Schnittstelle(s.bestand, listen, lehre: s.lehre, nachAenderung: s.sichern);
   Future<Response> handler(Request q) async {
     final a = schnittstelle.verarbeite(
       q.method,

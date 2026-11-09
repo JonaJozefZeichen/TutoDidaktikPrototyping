@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tuto_didaktik/api.dart';
 import 'package:tuto_didaktik/demo.dart';
+import 'package:tuto_didaktik/lehre/lehre_shell.dart';
 import 'package:tuto_didaktik/seiten/anmelden.dart';
 import 'package:tuto_didaktik/shell.dart';
 import 'package:tuto_didaktik/thema.dart';
@@ -41,11 +42,13 @@ class _DidaktikAppState extends State<DidaktikApp> {
   Widget build(BuildContext context) {
     final p = _person;
     return MaterialApp(
-      title: 'Tuto Didaktik-Tool',
+      title: 'Tuto Didaktik-Tool und Bereich für Lehrende',
       debugShowCheckedModeBanner: false,
       theme: baueThema(),
       home: p == null
           ? AnmeldenSeite(api: widget.api, demo: widget.demo != null, onAngemeldet: _setze)
+          : p.istLehrbereich
+          ? LehreShell(key: ValueKey(p.id), api: widget.api, person: p, demo: widget.demo, onAbmelden: () => _setze(null))
           : Shell(key: ValueKey(p.id), api: widget.api, person: p, demo: widget.demo, onAbmelden: () => _setze(null)),
     );
   }

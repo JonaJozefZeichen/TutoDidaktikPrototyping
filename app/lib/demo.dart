@@ -14,10 +14,11 @@ class DemoClient extends http.BaseClient {
   DemoClient._(this._startbestand, this._listen, this._speicher) {
     _neu();
     final stand = _speicherLesen();
-    if (stand != null) _schnittstelle = _baue(Bestand.eintraegeAusJson(stand));
+    if (stand != null) _schnittstelle = _baue(Bestand.eintraegeAusJson(stand), _lehreLesen());
   }
 
   static const _schluessel = 'didaktik_demo_stand';
+  static const _schluesselLehre = 'didaktik_demo_lehrbereich';
 
   final String _startbestand;
   final Stammlisten _listen;
@@ -39,9 +40,10 @@ class DemoClient extends http.BaseClient {
     return DemoClient._(await rootBundle.loadString('assets/beispiel/aufgaben.json'), listen, speicher);
   }
 
-  Schnittstelle _baue(Map<String, Eintrag> eintraege) => Schnittstelle(
+  Schnittstelle _baue(Map<String, Eintrag> eintraege, [Lehrbereich? lehre]) => Schnittstelle(
     Bestand(kontext: _listen.kontext, eintraege: eintraege),
     _listen,
+    lehre: lehre,
     nachAenderung: _speichern,
   );
 
@@ -64,9 +66,20 @@ class DemoClient extends http.BaseClient {
     }
   }
 
+  Lehrbereich? _lehreLesen() {
+    try {
+      final text = _speicher?.getString(_schluesselLehre);
+      return text == null ? null : Lehrbereich.fromJson(jsonDecode(text) as Map<String, dynamic>);
+    } catch (e) {
+      debugPrint('Gespeicherte Daten der Lehrpersonen unlesbar: $e');
+      return null;
+    }
+  }
+
   void _speichern() {
     try {
       unawaited(_speicher?.setString(_schluessel, jsonEncode(_schnittstelle.bestand.toJson())));
+      unawaited(_speicher?.setString(_schluesselLehre, jsonEncode(_schnittstelle.lehre.toJson())));
     } catch (e) {
       debugPrint('Demo-Stand nicht gespeichert: $e');
     }
@@ -77,6 +90,7 @@ class DemoClient extends http.BaseClient {
     _neu();
     try {
       await _speicher?.remove(_schluessel);
+      await _speicher?.remove(_schluesselLehre);
     } catch (e) {
       debugPrint('Demo-Stand nicht gelöscht: $e');
     }

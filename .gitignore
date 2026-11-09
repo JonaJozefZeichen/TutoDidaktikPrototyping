@@ -9,3 +9,6 @@ server/data/
 seed/
 # Die Bilder zeigen Aufgabentexte
 app/test/bilder/
+
+# Ausgabe fehlgeschlagener Bildvergleiche, zeigt ebenfalls Aufgabentexte
+app/test/failures/

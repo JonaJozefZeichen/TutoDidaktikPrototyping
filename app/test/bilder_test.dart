@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tuto_didaktik/lehre/paket_editor.dart';
 import 'package:tuto_didaktik/main.dart';
 
 import 'hilfsmittel.dart';
@@ -36,5 +38,67 @@ void main() {
     await t.tap(find.byTooltip('Im Bauplan nachsehen: titel'));
     await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/editor_hilfe.png'));
+  });
+
+  testWidgets('Bilder Lehrende', skip: !bilderDa, (t) async {
+    PaketEditor.zufall = () => Random(1);
+    addTearDown(() => PaketEditor.zufall = Random.new);
+    await ladeSchriften();
+    t.view.physicalSize = const Size(1600, 1000);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(DidaktikApp(api: testApi()));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('person-lehrperson-schule')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_klassen.png'));
+    await t.tap(
+      find
+          .byWidgetPredicate(
+            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('klasse-'),
+          )
+          .first,
+    );
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_klasse.png'));
+    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Aufgaben')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_store.png'));
+    await t.tap(find.byKey(const ValueKey('filter-format-ankreuzen')));
+    await t.pumpAndSettle();
+    await t.tap(
+      find
+          .byWidgetPredicate(
+            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('ins-paket-'),
+          )
+          .first,
+    );
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_store_filter.png'));
+    await t.tap(
+      find
+          .byWidgetPredicate(
+            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('karte-'),
+          )
+          .first,
+    );
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_detail.png'));
+    await t.pump(const Duration(seconds: 6)); // Meldung ausblenden lassen
+    await t.pumpAndSettle();
+    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Pakete')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('paket-generieren')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('generieren')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('sperren-1')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_paket.png'));
+    await t.tap(find.byKey(const ValueKey('tab-gruppen')));
+    await t.pumpAndSettle();
+    await t.tap(find.text('A/B/C'));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_gruppen.png'));
   });
 }

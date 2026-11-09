@@ -179,4 +179,34 @@ void main() {
     expect(d['status'], 'geprueft');
     expect(Eintrag.fromJson(d).aktuell.approvals.single.person, 'didaktik-a');
   });
+
+  test('Bereich für Lehrende: Store, Ablage, Rechte und Neustart', () async {
+    expect((await get('/lehre/aufgaben', person: 'didaktik-a') as Map)['code'], 'keine_rechte');
+    expect(await get('/lehre/aufgaben', person: 'lehrperson-schule'), isEmpty);
+    final test = await get('/lehre/aufgaben/test', person: 'lehrperson-schule') as List;
+    expect(test, isNotEmpty);
+    expect((test.first as Map).keys, containsAll(['id', 'fassung', 'status', 'inhalt']));
+
+    final daten = await get('/lehre/daten', person: 'lehrperson-schule') as Map<String, dynamic>;
+    final d = LehrDaten.fromJson(daten);
+    d.ordnerMit(standardOrdner)!.aufgaben.add((test.first as Map)['id'] as String);
+    d.pakete.add(Paket(id: 'p1', titel: 'Wiederholung', erstellt: DateTime(2026, 11, 9)));
+    final (status, neu) = await post('/lehre/daten', d.toJson(), person: 'lehrperson-schule');
+    expect(status, 200);
+    expect((neu as Map)['version'], 1);
+    // Alter Stand aus einem zweiten Fenster.
+    final (konflikt, _) = await post('/lehre/daten', daten, person: 'lehrperson-schule');
+    expect(konflikt, 409);
+    // Didaktik darf nicht schreiben, Lehrpersonen keine Aufgaben speichern.
+    expect((await post('/lehre/daten', daten)).$1, 403);
+    expect((await post('/aufgaben/${(test.first as Map)['id']}/approval', {'fassung': 1}, person: 'lehrperson-schule')).$1, 403);
+
+    await server.close(force: true);
+    server = await starte();
+    basis = 'http://127.0.0.1:${server.port}/api';
+    final wieder = LehrDaten.fromJson(await get('/lehre/daten', person: 'lehrperson-schule') as Map<String, dynamic>);
+    expect(wieder.pakete.single.titel, 'Wiederholung');
+    expect(wieder.gemerkt, hasLength(1));
+    expect(File('${tmp.path}/lehrbereich.json').existsSync(), isTrue);
+  });
 }

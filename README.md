@@ -1,6 +1,8 @@
-# Tuto Didaktik-Tool (lokaler Teststand)
+# Tuto Didaktik-Tool und Bereich für Lehrende (lokaler Teststand)
 
 Website, auf der das Didaktik-Team Aufgaben importiert, kontrolliert, verbessert und für die App freigibt. Konzept: *Design Document; Didaktik-Tool.md* im Tuto-Vault.
+
+Im selben Programm läuft der **Bereich für Lehrende** (Lehrpersonen an Schulen und Nachhilfelehrer\*innen von Mindlink): Klassen, Aufgaben-Store mit Filtern, Merkliste mit Ordnern, Pakete per Hand oder per Generator mit Sperren und Neu-Würfeln, Gruppen A/B/C gegen Abschreiben. Welcher Bereich erscheint, entscheidet die Testperson beim Start. Konzept: *Design Document; Lehrpersonen-Ansicht.md* im Tuto-Vault.
 
 Das hier ist ein **Teststand**: kein echter Login, kein Supabase, keine Verbindung zur App.
 
@@ -16,7 +18,8 @@ Dieses Repo ist öffentlich.
 
 - `seed/privat/` ist **in Git ignoriert** und liegt nur lokal: Manuels Aufgaben und der volle Lernplan. Fehlt der Ordner, nutzen Server und Tests die Beispiele.
 - `app/assets/beispiel/` ist öffentlich und wird mit `python3 tools/beispiele_erzeugen.py` aus `seed/privat/` erzeugt.
-- `app/test/bilder/` ist ignoriert, weil die Bilder Aufgabentexte zeigen.
+- `app/test/bilder/` und `app/test/failures/` sind ignoriert, weil die Bilder Aufgabentexte zeigen.
+- Die Klassen im Bereich für Lehrende sind **erfundene Testdaten** (`testklassen.dart`), keine echten Personen.
 
 Vor jedem Commit darauf achten, dass keine weiteren Aufgaben in andere Dateien geraten.
 
@@ -35,6 +38,8 @@ Baut die Web-App bei Bedarf, startet den Server und öffnet http://127.0.0.1:878
 
 **Zwei Approvals testen:** zwei Fenster öffnen und verschiedene Testpersonen wählen. Beim Neuladen der Seite wählt man die Person neu.
 
+**Bereich für Lehrende testen:** beim Start "Test-Lehrperson Schule" oder "Test-Nachhilfe Mindlink" wählen. Lehrpersonen sehen später nur freigegebene Aufgaben; im Teststand zeigt der Schalter "Entwürfe zeigen" auch Entwürfe, sonst wäre der Store leer. Merkliste und Pakete speichert der Server nach `server/data/lehrbereich.json` (`--reset` sichert auch diese Datei).
+
 **Tastenkürzel im Editor:** Cmd/Strg + S speichern, Cmd/Strg + Enter Approval, Strg + `.` und Strg + `,` nächste und vorherige Aufgabe.
 
 ## Aufbau
@@ -42,8 +47,9 @@ Baut die Web-App bei Bedarf, startet den Server und öffnet http://127.0.0.1:878
 | Ordner | Inhalt |
 |---|---|
 | `packages/didaktik_kern/` | reines Dart: Feldliste, Prüfung, Freigabe-Regeln (`Bestand`), Routen (`Schnittstelle`) |
-| `server/` | lokaler Server (shelf), hört nur auf 127.0.0.1, speichert nach `server/data/bestand.json` |
-| `app/` | Flutter Web: Übersicht, Aufgaben, Editor, Import, Hilfe |
+| `packages/didaktik_kern/lib/src/lehre/` | Bereich für Lehrende: Store-Zeilen und Filter, Generator und Gruppen A/B/C (`paket.dart`), Ablage pro Person (`Lehrbereich`), Testklassen |
+| `server/` | lokaler Server (shelf), hört nur auf 127.0.0.1, speichert nach `server/data/bestand.json` und `lehrbereich.json` |
+| `app/` | Flutter Web: Übersicht, Aufgaben, Editor, Import, Hilfe; `lib/lehre/` für den Bereich der Lehrenden |
 | `seed/privat/` | nur lokal: Startbestand und Listen aus dem Prototyp und Vault |
 | `tools/hilfe_sync.py` | holt Bauplan und Matura-Themen aus dem Vault |
 | `tools/beispiele_erzeugen.py` | erzeugt die öffentlichen Beispiele |
@@ -71,4 +77,4 @@ Texte und den Leitfaden (PDF) aus dem Vault aktualisieren: `python3 tools/hilfe_
 
 ## Noch nicht drin
 
-Echter Login, Supabase und Hosting, Anbindung der App, Meldungen und Urgent, Kommentare, Levels bearbeiten, SRDP-Import-Seite, Medien-Upload, Lehrer-Dashboard. Änderungen im Browser werden erst beim Speichern gesichert; Neuladen der Seite verwirft ungespeicherte Änderungen ohne Nachfrage.
+Echter Login, Supabase und Hosting, Anbindung der App, Meldungen und Urgent, Kommentare, Levels bearbeiten, SRDP-Import-Seite, Medien-Upload. Im Bereich für Lehrende: echte Klassen und Lernstände, Verschicken an Schüler\*innen, Ergebnisse, Melden, SRDP-Aufgaben im Store, PDF-Export eines Pakets. Änderungen im Browser werden erst beim Speichern gesichert; Neuladen der Seite verwirft ungespeicherte Änderungen ohne Nachfrage.

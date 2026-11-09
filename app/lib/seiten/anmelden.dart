@@ -25,7 +25,7 @@ class _AnmeldenSeiteState extends State<AnmeldenSeite> {
     return Scaffold(
       body: Center(
         child: Container(
-          width: 420,
+          width: 460,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -38,11 +38,11 @@ class _AnmeldenSeiteState extends State<AnmeldenSeite> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tuto Didaktik-Tool', style: text.titleLarge),
+                Text('Tuto: Didaktik-Tool und Bereich für Lehrende', style: text.titleLarge),
                 const SizedBox(height: 4),
                 Text(
                   widget.demo
-                      ? 'Demo mit Beispielaufgaben: kein echter Login, Änderungen bleiben nur in diesem Browser. Um zwei Approvals zu testen, oben rechts die Testperson wechseln.'
+                      ? 'Demo mit Beispielaufgaben: kein echter Login, Änderungen bleiben nur in diesem Browser. Oben rechts lässt sich die Testperson jederzeit wechseln.'
                       : 'Testmodus: kein echter Login. Um zwei Approvals zu testen, zwei Fenster mit verschiedenen Testpersonen öffnen.',
                   style: text.bodySmall,
                 ),
@@ -56,21 +56,41 @@ class _AnmeldenSeiteState extends State<AnmeldenSeite> {
                   ),
                 ] else if (!s.hasData)
                   const Center(child: CircularProgressIndicator())
-                else
-                  for (final p in s.data!)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () => widget.onAngemeldet(p),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Text('${p.name} (${p.rollenText})'),
+                else ...[
+                  for (final (titel, beschreibung, personen) in [
+                    (
+                      'Didaktik-Team',
+                      'Aufgaben importieren, prüfen, bearbeiten und freigeben',
+                      [for (final p in s.data!) if (!p.istLehrbereich) p],
+                    ),
+                    (
+                      'Lehrende',
+                      'Klassen, Aufgaben-Store, Merkliste und Pakete (Schule oder Mindlink-Nachhilfe)',
+                      [for (final p in s.data!) if (p.istLehrbereich) p],
+                    ),
+                  ])
+                    if (personen.isNotEmpty) ...[
+                      Text(titel, style: text.titleMedium),
+                      Text(beschreibung, style: text.bodySmall),
+                      const SizedBox(height: 8),
+                      for (final p in personen)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              key: ValueKey('person-${p.id}'),
+                              onPressed: () => widget.onAngemeldet(p),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Text('${p.name} (${p.rollenText})'),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      const SizedBox(height: 12),
+                    ],
+                ],
               ],
             ),
           ),

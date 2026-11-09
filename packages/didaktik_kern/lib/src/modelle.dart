@@ -5,26 +5,48 @@ library;
 
 /// Testperson. Rechte nach der Rollen-Tabelle im Design Document.
 class Person {
-  const Person({required this.id, required this.name, this.didaktik = false, this.admin = false});
+  const Person({
+    required this.id,
+    required this.name,
+    this.didaktik = false,
+    this.admin = false,
+    this.lehrperson = false,
+  });
 
   final String id;
   final String name;
   final bool didaktik;
   final bool admin;
 
+  /// Lehrperson an einer Schule oder Nachhilfelehrer\*in von Mindlink: sieht
+  /// den Bereich für Lehrende, bearbeitet aber keine Aufgaben.
+  final bool lehrperson;
+
   bool get darfBearbeiten => didaktik || admin;
   bool get darfFreigeben => didaktik;
   bool get darfZurueckziehen => didaktik || admin;
+  bool get darfPaketeBauen => lehrperson;
 
-  String get rollenText => [if (didaktik) 'Didaktik', if (admin) 'Admin'].join(' + ');
+  /// Bereich, den die Oberfläche nach der Anmeldung zeigt.
+  bool get istLehrbereich => lehrperson && !didaktik && !admin;
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'didaktik': didaktik, 'admin': admin};
+  String get rollenText =>
+      [if (didaktik) 'Didaktik', if (admin) 'Admin', if (lehrperson) 'Lehrperson'].join(' + ');
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'didaktik': didaktik,
+    'admin': admin,
+    'lehrperson': lehrperson,
+  };
 
   factory Person.fromJson(Map<String, dynamic> j) => Person(
     id: j['id'] as String,
     name: j['name'] as String,
     didaktik: j['didaktik'] as bool? ?? false,
     admin: j['admin'] as bool? ?? false,
+    lehrperson: j['lehrperson'] as bool? ?? false,
   );
 }
 

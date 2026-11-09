@@ -6,6 +6,7 @@ library;
 import 'dart:convert';
 
 import 'package:didaktik_kern/src/bestand.dart';
+import 'package:didaktik_kern/src/lehre/lehrbereich.dart';
 import 'package:didaktik_kern/src/modelle.dart';
 import 'package:didaktik_kern/src/pruefung.dart';
 
@@ -14,6 +15,8 @@ const testPersonen = [
   Person(id: 'didaktik-a', name: 'Test-Didaktik A', didaktik: true),
   Person(id: 'didaktik-b', name: 'Test-Didaktik B', didaktik: true),
   Person(id: 'admin', name: 'Test-Admin', admin: true),
+  Person(id: 'lehrperson-schule', name: 'Test-Lehrperson Schule', lehrperson: true),
+  Person(id: 'lehrperson-nachhilfe', name: 'Test-Nachhilfe Mindlink', lehrperson: true),
 ];
 
 /// Listen für Dropdowns und Prüfung.
@@ -27,7 +30,13 @@ class Stammlisten {
     return Stammlisten(
       [
         for (final l in rohLevels)
-          {'id': l['level_id'], 'titel': l['titel'], 'themenbereich': l['themenbereich'], 'lernwelt': l['lernwelt']},
+          {
+            'id': l['level_id'],
+            'titel': l['titel'],
+            'themenbereich': l['themenbereich'],
+            'lernwelt': l['lernwelt'],
+            'kompetenzen': l['kompetenzen'] ?? const [],
+          },
       ],
       <String>{
         ...keys.values.cast<String>(),
@@ -54,10 +63,13 @@ class SchnittstellenAntwort {
 }
 
 class Schnittstelle {
-  Schnittstelle(this.bestand, this.listen, {this.nachAenderung});
+  Schnittstelle(this.bestand, this.listen, {Lehrbereich? lehre, this.nachAenderung}) : lehre = lehre ?? Lehrbereich();
 
   final Bestand bestand;
   final Stammlisten listen;
+
+  /// Ablagen der Lehrpersonen (Merkliste, Suchen, Pakete).
+  final Lehrbereich lehre;
 
   /// Wird nach jeder Änderung aufgerufen, zum Speichern.
   final void Function()? nachAenderung;
@@ -85,9 +97,21 @@ class Schnittstelle {
           return [for (final e in bestand.eintraege.values) bestand.zeile(e)];
         case ['aufgaben', final id]:
           return bestand.detail(bestand.eintrag(id));
+        // Bereich für Lehrende: nur freigegebene Aufgaben; `test` zeigt im
+        // Teststand auch Entwürfe, damit der Store nicht leer ist.
+        case ['lehre', 'aufgaben'] || ['lehre', 'aufgaben', 'test']:
+          lehre.lies(p);
+          return _storeZeilen(auchUnfreigegebene: pfad.length == 3);
+        case ['lehre', 'daten']:
+          return lehre.lies(p).toJson();
       }
     }
     if (methode == 'POST') {
+      if (pfad case ['lehre', 'daten']) {
+        final d = lehre.speichere(p, _koerper(inhalt));
+        nachAenderung?.call();
+        return d.toJson();
+      }
       if (pfad case ['import']) {
         final bericht = bestand.importiere(inhalt, p);
         nachAenderung?.call();
@@ -117,6 +141,15 @@ class Schnittstelle {
     }
     throw const RegelFehler('nicht_gefunden', 'Diese Anfrage gibt es nicht', status: 404);
   }
+
+  List<Map<String, dynamic>> _storeZeilen({required bool auchUnfreigegebene}) => [
+    for (final e in bestand.eintraege.values)
+      if (e.status != 'zurueckgezogen')
+        if (e.liveInhalt case final live?)
+          {'id': e.id, 'fassung': e.liveFassung, 'status': 'live', 'inhalt': live}
+        else if (auchUnfreigegebene)
+          {'id': e.id, 'fassung': e.aktuell.nr, 'status': e.status, 'inhalt': e.aktuell.inhalt},
+  ];
 
   /// Schon verwendete Namen, als Vorschläge beim Eintippen.
   List<String> _fehlerbildNamen() {
