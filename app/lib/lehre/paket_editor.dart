@@ -4,7 +4,10 @@ import 'package:didaktik_kern/didaktik_kern.dart';
 import 'package:flutter/material.dart';
 
 import 'package:tuto_didaktik/editor/vorschau.dart';
+import 'package:printing/printing.dart';
+
 import 'package:tuto_didaktik/lehre/bausteine.dart';
+import 'package:tuto_didaktik/lehre/paket_pdf.dart';
 import 'package:tuto_didaktik/lehre/store_seite.dart';
 import 'package:tuto_didaktik/lehre/zustand.dart';
 import 'package:tuto_didaktik/thema.dart';
@@ -70,7 +73,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
       final belegt = {for (final x in _p.plaetze) x.aufgabe};
       final neu = <String, List<GruppenPlatz>>{};
       for (var g = 1; g < _p.gruppen; g++) {
-        final name = gruppenNamen[g];
+        final name = gruppenName(g);
         final alt = alteGruppen[name] ?? const <GruppenPlatz>[];
         final liste = <GruppenPlatz>[];
         for (final platz in _p.plaetze) {
@@ -196,36 +199,108 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
     await _speichere();
   }
 
+  /// Förderpakete gehen ohne Rückfrage nur an die Personen, die die
+  /// Förderung brauchen; andere Pakete an eine gewählte Klasse.
   Future<void> _zuweisen() async {
-    final klasse = await showDialog<TestKlasse>(
+    final f = _p.foerderung;
+    final TestKlasse? klasse;
+    if (f != null) {
+      klasse = z.klassen.where((k) => k.id == f.klasse).firstOrNull;
+    } else {
+      klasse = await showDialog<TestKlasse>(
+        context: context,
+        builder: (d) => SimpleDialog(
+          title: const Text('An Klasse zuweisen (Testdaten)'),
+          children: [
+            for (final k in z.klassen)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(d, k),
+                child: Text('${k.name} · ${k.lernwelt}. Klasse · ${k.schueler.length} Personen'),
+              ),
+          ],
+        ),
+      );
+    }
+    if (klasse == null || !mounted) return;
+    final personen = [
+      for (final s in klasse.schueler)
+        if (f == null || f.schueler.contains(s.id)) s.id,
+    ];
+    final meldung = weiseZu(_p, klasse, personen);
+    setState(() {});
+    await _speichere();
+    if (mounted) await zeigeMeldung(context, meldung);
+  }
+
+  /// Drucken als PDF: Gruppen wählen, auf Wunsch mit Lösungsblatt.
+  Future<void> _drucken() async {
+    final namen = gruppenNamenBis(_p.gruppen);
+    final gewaehlt = {...namen};
+    var loesungen = true;
+    final ok = await showDialog<bool>(
       context: context,
-      builder: (d) => SimpleDialog(
-        title: const Text('An Klasse zuweisen (Testdaten)'),
-        children: [
-          for (final k in z.klassen)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(d, k),
-              child: Text('${k.name} · ${k.lernwelt}. Klasse · ${k.schueler.length} Personen'),
+      builder: (d) => StatefulBuilder(
+        builder: (d, setD) => AlertDialog(
+          title: const Text('Drucken / PDF'),
+          content: SizedBox(
+            width: 380,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (namen.length > 1) ...[
+                  const Text('Gruppen'),
+                  Wrap(
+                    spacing: 6,
+                    children: [
+                      for (final g in namen)
+                        FilterChip(
+                          label: Text(g),
+                          selected: gewaehlt.contains(g),
+                          onSelected: (v) => setD(() => v ? gewaehlt.add(g) : gewaehlt.remove(g)),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                SwitchListTile(
+                  key: const ValueKey('pdf-loesungen'),
+                  contentPadding: EdgeInsets.zero,
+                  value: loesungen,
+                  title: const Text('Lösungsblatt pro Gruppe anhängen'),
+                  onChanged: (v) => setD(() => loesungen = v),
+                ),
+                Text(
+                  'Unten auf jeder Seite steht „© Tuto · Aufgaben aus dem Tuto-Aufgabenbestand“. '
+                  'SRDP-Aufgaben tragen ihre ID neben dem Titel und einen Quellenhinweis.',
+                  style: Theme.of(d).textTheme.bodySmall,
+                ),
+              ],
             ),
-        ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Abbrechen')),
+            FilledButton(
+              key: const ValueKey('pdf-erzeugen'),
+              onPressed: gewaehlt.isEmpty ? null : () => Navigator.pop(d, true),
+              child: const Text('PDF erzeugen'),
+            ),
+          ],
+        ),
       ),
     );
-    if (klasse == null) return;
-    // Abwechselnd nach der Sitzreihenfolge (hier: alphabetisch), damit
-    // Nachbarn verschiedene Gruppen haben.
-    final verteilung = {
-      for (var i = 0; i < klasse.schueler.length; i++) klasse.schueler[i].id: gruppenNamen[i % _p.gruppen],
-    };
-    setState(() {
-      _p.zuweisungen.removeWhere((x) => x.klasse == klasse.id);
-      _p.zuweisungen.add(Zuweisung(klasse: klasse.id, am: DateTime.now(), verteilung: verteilung));
-    });
-    await _speichere();
-    if (!mounted) return;
-    final zahlen = [
-      for (final g in gruppenNamen.take(_p.gruppen)) '$g: ${verteilung.values.where((x) => x == g).length}',
-    ].join(', ');
-    await zeigeMeldung(context, 'An ${klasse.name} zugewiesen ($zahlen). Im Test wird nichts verschickt.');
+    if (ok != true || !mounted) return;
+    final blaetter = paketBlaetter(
+      _p,
+      z.nachId,
+      gruppen: [
+        for (final g in namen)
+          if (gewaehlt.contains(g)) g,
+      ],
+      mitLoesungen: loesungen,
+    );
+    final bytes = await paketPdf(blaetter);
+    await Printing.layoutPdf(onLayout: (_) async => bytes, name: '${_p.titel}.pdf');
   }
 
   @override
@@ -275,6 +350,13 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                         label: Text(z.offenesPaket == _p.id ? 'Store legt hier hinein' : 'Aus dem Store befüllen'),
                       ),
                       const SizedBox(width: 4),
+                      OutlinedButton.icon(
+                        key: const ValueKey('paket-drucken'),
+                        onPressed: _p.plaetze.isEmpty ? null : _drucken,
+                        icon: const Icon(Icons.print_outlined, size: 18),
+                        label: const Text('Drucken / PDF'),
+                      ),
+                      const SizedBox(width: 8),
                       FilledButton.icon(
                         key: const ValueKey('paket-zuweisen'),
                         onPressed: _p.plaetze.isEmpty ? null : _zuweisen,
@@ -283,6 +365,21 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       ),
                     ],
                   ),
+                  if (_p.foerderung case final f?)
+                    Container(
+                      key: const ValueKey('foerder-hinweis'),
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: const Color(0xFFE4ECFA), borderRadius: BorderRadius.circular(6)),
+                      child: Text(
+                        'Förderpaket „${f.kompetenz}“ für ${f.schueler.length} '
+                        '${f.schueler.length == 1 ? 'Person' : 'Personen'} der '
+                        '${z.klassen.where((k) => k.id == f.klasse).firstOrNull?.name ?? f.klasse}. '
+                        'Zuweisen schickt es direkt an diese Personen.',
+                        style: const TextStyle(color: tutoBlau, fontWeight: FontWeight.w600),
+                      ),
+                    ),
                   TabBar(
                     controller: _tabs,
                     isScrollable: true,
@@ -291,7 +388,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       const Tab(key: ValueKey('tab-aufgaben'), text: 'Aufgaben'),
                       Tab(
                         key: const ValueKey('tab-gruppen'),
-                        text: _p.gruppen > 1 ? 'Gruppen ${gruppenNamen.take(_p.gruppen).join('/')}' : 'Gruppen A/B/C',
+                        text: _p.gruppen == 1 ? 'Gruppen' : 'Gruppen (${_p.gruppen})',
                       ),
                     ],
                   ),
@@ -302,7 +399,8 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
             Expanded(
               child: LayoutBuilder(
                 builder: (context, groesse) {
-                  final mitVorschau = groesse.maxWidth >= 1150;
+                  final mitVorschau = groesse.maxWidth >= 1250;
+                  final vorschauBreite = (groesse.maxWidth * 0.42).clamp(440.0, 700.0);
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -314,7 +412,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       ),
                       if (mitVorschau)
                         Container(
-                          width: 440,
+                          width: vorschauBreite,
                           decoration: const BoxDecoration(
                             border: Border(left: BorderSide(color: linie)),
                           ),
@@ -720,7 +818,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
 
   Widget _gruppenTab(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final gruppen = [for (var g = 1; g < _p.gruppen; g++) gruppenNamen[g]];
+    final gruppen = [for (var g = 1; g < _p.gruppen; g++) gruppenName(g)];
     final alle = [for (final g in gruppen) ...?_p.gruppenPlaetze[g]];
     final fehlt = alle.where((g) => g.art == GruppenArt.fehlt).length;
     final ersatz = alle.where((g) => g.art == GruppenArt.ersatz || g.art == GruppenArt.ersatzTyp).length;
@@ -742,21 +840,33 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            SegmentedButton<int>(
-              key: const ValueKey('gruppen-zahl'),
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(value: 1, label: Text('Nur A')),
-                ButtonSegment(value: 2, label: Text('A/B')),
-                ButtonSegment(value: 3, label: Text('A/B/C')),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: const ValueKey('gruppen-weniger'),
+                  tooltip: 'Weniger Gruppen',
+                  onPressed: _p.gruppen > 1 ? () => _gruppenSetzen(_p.gruppen - 1) : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Text(
+                  _p.gruppen == 1 ? '1 Gruppe' : '${_p.gruppen} Gruppen',
+                  key: const ValueKey('gruppen-zahl'),
+                  style: text.titleMedium,
+                ),
+                IconButton(
+                  key: const ValueKey('gruppen-mehr'),
+                  tooltip: 'Mehr Gruppen',
+                  onPressed: _p.gruppen < maxGruppen ? () => _gruppenSetzen(_p.gruppen + 1) : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+                Text(gruppenNamenBis(_p.gruppen).join(' · '), style: text.bodySmall),
               ],
-              selected: {_p.gruppen},
-              onSelectionChanged: (s) => _gruppenSetzen(s.first),
             ),
             if (_p.gruppen > 1) ...[
               FilterChip(
                 key: const ValueKey('antworten-mischen'),
-                label: const Text('Antworten in B/C mischen'),
+                label: const Text('Antworten ab Gruppe B mischen'),
                 selected: _p.antwortenMischen,
                 onSelected: (v) {
                   setState(() => _p.antwortenMischen = v);
@@ -795,37 +905,46 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
         if (_p.plaetze.isEmpty)
           Text('Zuerst Aufgaben ins Paket legen.', style: text.bodySmall)
         else
-          Table(
-            border: TableBorder.all(color: linie),
-            columnWidths: const {0: FixedColumnWidth(36)},
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-            children: [
-              TableRow(
-                decoration: const BoxDecoration(color: flaeche),
-                children: [
-                  const SizedBox.shrink(),
-                  for (final g in gruppenNamen.take(_p.gruppen))
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Text('Gruppe $g', style: const TextStyle(fontWeight: FontWeight.w700)),
-                    ),
-                ],
-              ),
-              for (var i = 0; i < _p.plaetze.length; i++)
+          // Bei vielen Gruppen scrollt die Tabelle waagrecht.
+          _GruppenTabelle(
+            breit: _p.gruppen > 3,
+            child: Table(
+              border: TableBorder.all(color: linie),
+              columnWidths: _p.gruppen <= 3
+                  ? const {0: FixedColumnWidth(36)}
+                  : {
+                      0: const FixedColumnWidth(36),
+                      for (var c = 1; c <= _p.gruppen; c++) c: const FixedColumnWidth(260),
+                    },
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              children: [
                 TableRow(
+                  decoration: const BoxDecoration(color: flaeche),
                   children: [
-                    Padding(padding: const EdgeInsets.all(8), child: Text('${i + 1}')),
-                    _gruppenZelle('A', i, _p.plaetze[i].aufgabe, GruppenArt.original),
-                    for (final g in gruppen)
-                      _gruppenZelle(
-                        g,
-                        i,
-                        _p.gruppenPlaetze[g]?.elementAtOrNull(i)?.aufgabe,
-                        _p.gruppenPlaetze[g]?.elementAtOrNull(i)?.art ?? GruppenArt.fehlt,
+                    const SizedBox.shrink(),
+                    for (final g in gruppenNamenBis(_p.gruppen))
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Text('Gruppe $g', style: const TextStyle(fontWeight: FontWeight.w700)),
                       ),
                   ],
                 ),
-            ],
+                for (var i = 0; i < _p.plaetze.length; i++)
+                  TableRow(
+                    children: [
+                      Padding(padding: const EdgeInsets.all(8), child: Text('${i + 1}')),
+                      _gruppenZelle('A', i, _p.plaetze[i].aufgabe, GruppenArt.original),
+                      for (final g in gruppen)
+                        _gruppenZelle(
+                          g,
+                          i,
+                          _p.gruppenPlaetze[g]?.elementAtOrNull(i)?.aufgabe,
+                          _p.gruppenPlaetze[g]?.elementAtOrNull(i)?.art ?? GruppenArt.fehlt,
+                        ),
+                    ],
+                  ),
+              ],
+            ),
           ),
       ],
     );
@@ -883,11 +1002,11 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
     final id = gruppe == 'A' ? _p.plaetze[i].aufgabe : gp?.aufgabe;
     final aufgabe = id == null ? null : z.nachId[id];
     if (aufgabe == null) return const Center(child: Text('Keine Aufgabe auf diesem Platz'));
-    final g = gruppenNamen.indexOf(gruppe);
+    final g = gruppe.codeUnitAt(0) - 65;
     final inhalt = gruppe != 'A' && _p.antwortenMischen
         ? mischeAntworten(aufgabe.inhalt, g * 7919 + i)
         : aufgabe.inhalt;
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -906,9 +1025,14 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
             ],
           ),
           const SizedBox(height: 8),
-          HandyVorschau(
-            key: ValueKey('paket-vorschau-$gruppe-$i-${aufgabe.id}-${_p.antwortenMischen}'),
-            inhalt: inhalt,
+          Expanded(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: HandyVorschau(
+                key: ValueKey('paket-vorschau-$gruppe-$i-${aufgabe.id}-${_p.antwortenMischen}'),
+                inhalt: inhalt,
+              ),
+            ),
           ),
         ],
       ),
@@ -1070,4 +1194,17 @@ class _AufgabenWahlState extends State<_AufgabenWahl> {
       ),
     );
   }
+}
+
+/// Bis drei Gruppen füllt die Tabelle die Breite, darüber scrollt sie waagrecht.
+class _GruppenTabelle extends StatelessWidget {
+  const _GruppenTabelle({required this.breit, required this.child});
+
+  final bool breit;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => breit
+      ? SingleChildScrollView(key: const ValueKey('gruppen-tabelle'), scrollDirection: Axis.horizontal, child: child)
+      : child;
 }

@@ -108,7 +108,37 @@ class Zuweisung {
   Map<String, dynamic> toJson() => {'klasse': klasse, 'am': am.toIso8601String(), 'verteilung': verteilung};
 }
 
-const gruppenNamen = ['A', 'B', 'C'];
+/// Höchstzahl der Gruppen; benannt nach dem Alphabet.
+const maxGruppen = 26;
+
+/// Name der Gruppe Nummer [i] (0 = A).
+String gruppenName(int i) => String.fromCharCode(65 + i);
+
+/// Namen der ersten [n] Gruppen.
+List<String> gruppenNamenBis(int n) => [for (var i = 0; i < n.clamp(1, maxGruppen); i++) gruppenName(i)];
+
+/// Verteilt Personen abwechselnd auf die Gruppen (Sitzreihenfolge), damit
+/// Nachbarn verschiedene Gruppen haben.
+Map<String, String> verteileGruppen(List<String> personen, int gruppen) => {
+  for (var i = 0; i < personen.length; i++) personen[i]: gruppenName(i % gruppen.clamp(1, maxGruppen)),
+};
+
+/// Ziel eines Förderpakets: nur die Personen, die die Förderung brauchen.
+class Foerderung {
+  const Foerderung({required this.klasse, required this.kompetenz, required this.schueler});
+
+  factory Foerderung.fromJson(Map<String, dynamic> j) => Foerderung(
+    klasse: j['klasse'] as String,
+    kompetenz: j['kompetenz'] as String,
+    schueler: [...((j['schueler'] as List?) ?? const []).whereType<String>()],
+  );
+
+  final String klasse;
+  final String kompetenz;
+  final List<String> schueler;
+
+  Map<String, dynamic> toJson() => {'klasse': klasse, 'kompetenz': kompetenz, 'schueler': schueler};
+}
 
 class Paket {
   Paket({
@@ -116,11 +146,12 @@ class Paket {
     required this.titel,
     required this.erstellt,
     List<PaketPlatz>? plaetze,
-    this.gruppen = 1,
+    this.gruppen = 2,
     Map<String, List<GruppenPlatz>>? gruppenPlaetze,
     this.antwortenMischen = true,
     GeneratorEinstellung? einstellung,
     this.quelle = 'alle',
+    this.foerderung,
     StoreFilter? filter,
     List<Zuweisung>? zuweisungen,
   }) : plaetze = plaetze ?? [],
@@ -134,7 +165,7 @@ class Paket {
     titel: j['titel'] as String? ?? 'Paket',
     erstellt: DateTime.parse(j['erstellt'] as String),
     plaetze: [for (final p in (j['plaetze'] as List?) ?? const []) PaketPlatz.fromJson(p as Map<String, dynamic>)],
-    gruppen: (j['gruppen'] as int? ?? 1).clamp(1, 3),
+    gruppen: (j['gruppen'] as int? ?? 2).clamp(1, maxGruppen),
     gruppenPlaetze: {
       for (final e in ((j['gruppen_plaetze'] as Map?) ?? const {}).entries)
         '${e.key}': [for (final g in e.value as List) GruppenPlatz.fromJson(g as Map<String, dynamic>)],
@@ -145,6 +176,9 @@ class Paket {
         : null,
     quelle: j['quelle'] as String? ?? 'alle',
     filter: j['filter'] is Map<String, dynamic> ? StoreFilter.fromJson(j['filter'] as Map<String, dynamic>) : null,
+    foerderung: j['foerderung'] is Map<String, dynamic>
+        ? Foerderung.fromJson(j['foerderung'] as Map<String, dynamic>)
+        : null,
     zuweisungen: [
       for (final z in (j['zuweisungen'] as List?) ?? const []) Zuweisung.fromJson(z as Map<String, dynamic>),
     ],
@@ -155,8 +189,11 @@ class Paket {
   final DateTime erstellt;
   final List<PaketPlatz> plaetze;
 
-  /// 1 = nur A, 2 = A/B, 3 = A/B/C.
+  /// Zahl der Gruppen (1 = nur A, Standard 2 = A/B, höchstens [maxGruppen]).
   int gruppen;
+
+  /// Gesetzt, wenn das Paket als Förderpaket aus einer Klasse entstand.
+  Foerderung? foerderung;
 
   /// Gruppe `B`/`C` → ein Platz pro Platz in [plaetze].
   final Map<String, List<GruppenPlatz>> gruppenPlaetze;
@@ -185,6 +222,7 @@ class Paket {
     'antworten_mischen': antwortenMischen,
     'einstellung': einstellung.toJson(),
     'quelle': quelle,
+    'foerderung': foerderung?.toJson(),
     'filter': filter.toJson(),
     'zuweisungen': [for (final z in zuweisungen) z.toJson()],
   };
@@ -359,21 +397,21 @@ class PaketGenerator {
 
 // --- Gruppen A/B/C ---
 
-/// Bildet die Gruppen B und C. Reihenfolge der Quellen pro Platz: andere
+/// Bildet die Gruppen ab B. Reihenfolge der Quellen pro Platz: andere
 /// Aufgabe derselben Variantengruppe, dieselbe Vorlage mit anderen Zahlen,
 /// Ersatz mit gleicher Kompetenz, gleichem Aufgabentyp und gleicher
 /// Schwierigkeit; sonst fehlt der Platz und die Oberfläche warnt.
 Map<String, List<GruppenPlatz>> bildeGruppen(List<PaketPlatz> plaetze, int gruppen, Map<String, StoreAufgabe> alle) {
   final belegt = {for (final p in plaetze) p.aufgabe};
   final ergebnis = <String, List<GruppenPlatz>>{};
-  for (var g = 1; g < gruppen.clamp(1, 3); g++) {
+  for (var g = 1; g < gruppen.clamp(1, maxGruppen); g++) {
     final liste = <GruppenPlatz>[];
     for (final p in plaetze) {
       final platz = gruppenPlatzFuer(p, g, alle, belegt);
       if (platz.aufgabe != null && platz.art != GruppenArt.parameter) belegt.add(platz.aufgabe!);
       liste.add(platz);
     }
-    ergebnis[gruppenNamen[g]] = liste;
+    ergebnis[gruppenName(g)] = liste;
   }
   return ergebnis;
 }

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuto_didaktik/api.dart';
 import 'package:tuto_didaktik/demo.dart';
+import 'package:tuto_didaktik/lehre/paket_pdf.dart';
 import 'package:tuto_didaktik/main.dart';
 
 import 'hilfsmittel.dart';
@@ -127,10 +128,15 @@ void main() {
 
     await t.tap(find.byKey(const ValueKey('tab-gruppen')));
     await t.pumpAndSettle();
-    await t.tap(find.text('A/B/C'));
-    await t.pumpAndSettle();
-    expect(find.text('Gruppe C'), findsOneWidget);
-    expect(find.byKey(const ValueKey('zelle-C-4')), findsOneWidget);
+    // Standard sind zwei Gruppen, mehr lassen sich dazunehmen (A, B, C ...).
+    expect(find.text('Gruppe B'), findsOneWidget);
+    expect(find.text('Gruppe C'), findsNothing);
+    for (var i = 0; i < 3; i++) {
+      await t.tap(find.byKey(const ValueKey('gruppen-mehr')));
+      await t.pumpAndSettle();
+    }
+    expect(find.text('5 Gruppen'), findsOneWidget);
+    expect(find.byKey(const ValueKey('zelle-E-4')), findsOneWidget);
 
     await t.tap(find.byKey(const ValueKey('paket-zuweisen')));
     await t.pumpAndSettle();
@@ -141,32 +147,31 @@ void main() {
     // Nach dem Neuladen ist alles noch da.
     await t.tap(find.byKey(const ValueKey('paket-zurueck')));
     await t.pumpAndSettle();
-    expect(find.textContaining('Gruppen A/B/C'), findsOneWidget);
+    expect(find.textContaining('5 Gruppen'), findsOneWidget);
     expect(find.textContaining('zugewiesen: Gruppe Montag'), findsOneWidget);
   });
 
-  testWidgets('Klassen mit Testdaten und Förderpaket aus einer Schwäche', (t) async {
+  Finder mitSchluessel(String anfang) =>
+      find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith(anfang));
+
+  testWidgets('Klasse: Förderpaket nur an Betroffene, Paket an alle, Antworten pro Person', (t) async {
     await starteAls(t, testApi(), 'lehrperson-schule');
-    await t.tap(
-      find
-          .byWidgetPredicate(
-            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('klasse-lehrperson'),
-          )
-          .first,
-    );
+    // Ein normales Paket für "an alle senden".
+    await seite(t, 'Pakete');
+    await t.tap(find.byKey(const ValueKey('paket-generieren')));
     await t.pumpAndSettle();
-    expect(find.text('Schwächen der Klasse'), findsOneWidget);
-    expect(find.textContaining('Testdaten'), findsOneWidget);
-    final person = find
-        .byWidgetPredicate(
-          (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('schueler-'),
-        )
-        .first;
-    await t.tap(person);
+    await t.tap(find.byKey(const ValueKey('generieren')));
     await t.pumpAndSettle();
-    expect(find.textContaining('Kompetenzen ('), findsOneWidget);
-    await t.tap(find.byKey(const ValueKey('person-zurueck')));
+    await t.tap(find.byKey(const ValueKey('paket-zurueck')));
     await t.pumpAndSettle();
+
+    await seite(t, 'Klassen');
+    await t.tap(mitSchluessel('klasse-lehrperson').first);
+    await t.pumpAndSettle();
+    expect(find.text('Kompetenzen der Klasse'), findsOneWidget);
+    expect(find.text('Zugewiesene Pakete'), findsOneWidget);
+
+    // Förderpaket: Zuweisen fragt nicht nach der Klasse.
     final foerder = find.byWidgetPredicate(
       (w) =>
           w is TextButton &&
@@ -174,12 +179,83 @@ void main() {
           (w.key! as ValueKey<String>).value.startsWith('foerder-') &&
           w.onPressed != null,
     );
-    if (foerder.evaluate().isNotEmpty) {
-      await t.tap(foerder.first);
-      await t.pumpAndSettle();
-      expect(find.byKey(const ValueKey('generieren')), findsOneWidget);
-      expect(find.textContaining('Filter (1)'), findsOneWidget);
+    expect(foerder, findsWidgets);
+    await t.tap(foerder.first);
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('foerder-hinweis')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('generieren')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('paket-zuweisen')));
+    await t.pumpAndSettle();
+    expect(find.byType(SimpleDialog), findsNothing);
+    expect(find.textContaining('zugewiesen (A:'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('paket-zurueck')));
+    await t.pumpAndSettle();
+    expect(find.textContaining('Personen'), findsWidgets);
+
+    // Paket an alle senden.
+    await t.tap(find.byKey(const ValueKey('an-alle-senden')));
+    await t.pumpAndSettle();
+    await t.tap(find.byType(SimpleDialogOption).first);
+    await t.pumpAndSettle();
+    expect(find.textContaining('zugewiesen (A:'), findsOneWidget);
+    expect(find.textContaining('· an alle'), findsOneWidget);
+
+    // Antworten einer Person.
+    await t.tap(mitSchluessel('schueler-').first);
+    await t.pumpAndSettle();
+    await t.tap(mitSchluessel('ergebnis-').first);
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('ergebnis-summe')), findsOneWidget);
+    expect(find.textContaining('Lösung:'), findsWidgets);
+  });
+
+  testWidgets('PDF: Blätter pro Gruppe mit Lösungen, Copyright und SRDP-Kennzeichnung', (t) async {
+    final alle = <String, StoreAufgabe>{};
+    for (final (id, herkunft) in [('t1', 'team'), ('s1', 'srdp')]) {
+      final inhalt = <String, dynamic>{
+        'id': id,
+        'titel': 'Titel $id',
+        'herkunft': herkunft,
+        'stamm': 'Stamm',
+        'externe_referenzen': [
+          if (herkunft == 'srdp') {'quelle': 'srdp', 'id': 'AG 1.1 – 123'},
+        ],
+        'items': [
+          {
+            'item_id': '$id-1',
+            'aufgabenstellung': 'Kreuze an: x ∈ ℕ?',
+            'kompetenz': 'ag-x',
+            'antwortformat': 'mc_1aus5',
+            'antwort': {
+              'optionen': ['a', 'b', 'c', 'd', 'e'],
+              'richtig': 1,
+            },
+            'punkteschema': '0/1',
+            'loesungsweg': ['Weil.'],
+            'hilfen': [],
+            'schwierigkeit_start': 2,
+          },
+        ],
+      };
+      alle[id] = StoreAufgabe.aus(id, inhalt, fassung: 1, status: 'live');
     }
+    final p = Paket(id: 'p', titel: 'Test', erstellt: DateTime(2026))
+      ..plaetze.addAll([PaketPlatz.von(alle['t1']!), PaketPlatz.von(alle['s1']!)])
+      ..gruppenPlaetze['B'] = [
+        const GruppenPlatz(aufgabe: 's1', fassung: 1, art: GruppenArt.ersatz),
+        const GruppenPlatz(aufgabe: 't1', fassung: 1, art: GruppenArt.ersatz),
+      ];
+    final b = paketBlaetter(p, alle, gruppen: ['A', 'B'], mitLoesungen: true);
+    expect([for (final x in b) '${x.gruppe}${x.loesungen ? 'L' : ''}'], ['A', 'AL', 'B', 'BL']);
+    expect(b.first.aufgaben.map((a) => a.srdpKennung), [null, 'AG 1.1 – 123']);
+    expect(b.first.hatSrdp, isTrue);
+    expect(b.first.aufgaben.first.items.single.loesung, 'b');
+    // Gruppe B: Antworten gemischt, die Lösung zieht mit.
+    expect(b[2].aufgaben.first.titel, 'Titel s1');
+    expect(b[2].aufgaben.first.items.single.loesung, 'b');
+    final bytes = await t.runAsync(() => paketPdf(b));
+    expect(String.fromCharCodes(bytes!.take(4)), '%PDF');
   });
 
   testWidgets('Demo: Bereich für Lehrende läuft im Browser und merkt sich alles', (t) async {

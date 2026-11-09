@@ -465,8 +465,9 @@ class _EditorSeiteState extends State<EditorSeite> {
     children: [
       SizedBox(width: 300, child: _aufgabeSpalte(befunde)),
       const VerticalDivider(width: 1, color: linie),
+      // Die Vorschau scrollt nie; sie passt sich der Höhe an.
       Expanded(
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           child: Center(child: HandyVorschau(inhalt: _inhalt)),
         ),
@@ -649,7 +650,11 @@ class _EditorSeiteState extends State<EditorSeite> {
 
   Future<void> _itemWeg(int i) async {
     final iid = (_items[i] as Map)['item_id'];
-    final ok = await _bestaetige('Item entfernen?', 'Item ${i + 1} ($iid) wird aus dieser Fassung entfernt.', 'Entfernen');
+    final ok = await _bestaetige(
+      'Item entfernen?',
+      'Item ${i + 1} ($iid) wird aus dieser Fassung entfernt.',
+      'Entfernen',
+    );
     if (!ok) return;
     setState(() {
       _items.removeAt(i);
@@ -668,7 +673,9 @@ class _EditorSeiteState extends State<EditorSeite> {
     final alt = item['antwortformat'];
     if (neu is! String || neu == alt) return;
     String familie(Object? f) => ankreuzFormate.containsKey(f) ? 'ankreuzen' : '$f';
-    final antwort = item['antwort'] is Map<String, dynamic> ? item['antwort'] as Map<String, dynamic> : <String, dynamic>{};
+    final antwort = item['antwort'] is Map<String, dynamic>
+        ? item['antwort'] as Map<String, dynamic>
+        : <String, dynamic>{};
     setState(() {
       if (familie(alt) == familie(neu)) {
         item['antwort'] = antwortFuerFormat(neu, antwort);
@@ -822,7 +829,8 @@ class _EditorSeiteState extends State<EditorSeite> {
                     if (item['fehlerbilder'] is! Map<String, dynamic>) item['fehlerbilder'] = <String, dynamic>{};
                     f(item['fehlerbilder'] as Map<String, dynamic>);
                   }),
-                  onJsonGueltig: (ok) => setState(() => ok ? _jsonUngueltig.remove('$pfad/antwort') : _jsonUngueltig.add('$pfad/antwort')),
+                  onJsonGueltig: (ok) =>
+                      setState(() => ok ? _jsonUngueltig.remove('$pfad/antwort') : _jsonUngueltig.add('$pfad/antwort')),
                   onNeuAufbauen: () => setState(() => _ladeZaehler++),
                 ),
               ),

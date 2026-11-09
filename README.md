@@ -2,7 +2,7 @@
 
 Website, auf der das Didaktik-Team Aufgaben importiert, kontrolliert, verbessert und für die App freigibt. Konzept: *Design Document; Didaktik-Tool.md* im Tuto-Vault.
 
-Im selben Programm läuft der **Bereich für Lehrende** (Lehrpersonen an Schulen und Nachhilfelehrer\*innen von Mindlink): Klassen, Aufgaben-Store mit Filtern, Merkliste mit Ordnern, Pakete per Hand oder per Generator mit Sperren und Neu-Würfeln, Gruppen A/B/C gegen Abschreiben. Welcher Bereich erscheint, entscheidet die Testperson beim Start. Konzept: *Design Document; Lehrpersonen-Ansicht.md* im Tuto-Vault.
+Im selben Programm läuft der **Bereich für Lehrende** (Lehrpersonen an Schulen und Nachhilfelehrer\*innen von Mindlink): Klassen (Kompetenzen der Klasse, zugewiesene Pakete, „Paket an alle senden“, Förderpakete nur an die Betroffenen, Antworten pro Person), Aufgaben-Store mit Filtern, Merkliste mit Ordnern, Pakete per Hand oder per Generator mit Sperren und Neu-Würfeln, beliebig viele Gruppen (Standard 2, A, B, C …) gegen Abschreiben, Drucken als PDF mit Lösungsblatt. Welcher Bereich erscheint, entscheidet die Testperson beim Start. Konzept: *Design Document; Lehrpersonen-Ansicht.md* im Tuto-Vault.
 
 Das hier ist ein **Teststand**: kein echter Login, kein Supabase, keine Verbindung zur App.
 
@@ -19,7 +19,8 @@ Dieses Repo ist öffentlich.
 - `seed/privat/` ist **in Git ignoriert** und liegt nur lokal: Manuels Aufgaben und der volle Lernplan. Fehlt der Ordner, nutzen Server und Tests die Beispiele.
 - `app/assets/beispiel/` ist öffentlich und wird mit `python3 tools/beispiele_erzeugen.py` aus `seed/privat/` erzeugt.
 - `app/test/bilder/` und `app/test/failures/` sind ignoriert, weil die Bilder Aufgabentexte zeigen.
-- Die Klassen im Bereich für Lehrende sind **erfundene Testdaten** (`testklassen.dart`), keine echten Personen.
+- Die Klassen im Bereich für Lehrende sind **erfundene Testdaten** (`testklassen.dart`), keine echten Personen; auch die Antworten pro Person sind erfunden.
+- `app/assets/fonts/DejaVuSans*.ttf` (freie Lizenz, `DejaVuSans-LICENSE.txt`) dient nur dem PDF-Druck, weil sie Mathe-Zeichen wie ℕ, ∈ und ≤ enthält.
 
 Vor jedem Commit darauf achten, dass keine weiteren Aufgaben in andere Dateien geraten.
 

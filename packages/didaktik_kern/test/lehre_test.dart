@@ -311,4 +311,52 @@ void main() {
     expect(a.first.schueler.first.stufen.keys, unorderedEquals(['ag-a', 'ag-b', 'fa-c']));
     expect(testKlassen('lehrperson-nachhilfe', k).first.art, 'nachhilfe');
   });
+
+  group('Gruppen und Förderung', () {
+    test('Gruppen heißen nach dem Alphabet, beliebig viele, Standard 2', () {
+      expect(gruppenNamenBis(4), ['A', 'B', 'C', 'D']);
+      expect(gruppenName(25), 'Z');
+      expect(Paket(id: 'p', titel: 't', erstellt: DateTime(2026)).gruppen, 2);
+      final alle = {for (var i = 0; i < 8; i++) 'e$i': aufgabe('e$i', kompetenz: 'k', schwierigkeit: 3)};
+      final g = bildeGruppen([PaketPlatz.von(alle['e0']!)], 5, alle);
+      expect(g.keys, ['B', 'C', 'D', 'E']);
+      expect({for (final l in g.values) l.single.aufgabe}.length, 4);
+    });
+
+    test('Verteilung abwechselnd, auch für eine Teilmenge', () {
+      expect(verteileGruppen(['a', 'b', 'c', 'd', 'e'], 2), {'a': 'A', 'b': 'B', 'c': 'A', 'd': 'B', 'e': 'A'});
+      expect(verteileGruppen(['x'], 3), {'x': 'A'});
+    });
+
+    test('Förderung übersteht JSON', () {
+      final p = Paket(id: 'p', titel: 't', erstellt: DateTime(2026))
+        ..foerderung = const Foerderung(klasse: 'k1', kompetenz: 'ag-x', schueler: ['s1', 's2']);
+      final z = Paket.fromJson(jsonDecode(jsonEncode(p.toJson())) as Map<String, dynamic>);
+      expect(z.foerderung!.schueler, ['s1', 's2']);
+      expect(z.toJson(), p.toJson());
+    });
+
+    test('Testantworten: reproduzierbar, falsche haben eine gegebene Antwort', () {
+      final person = testKlassen('lehrperson-schule', {
+        5: ['ag-test'],
+      }).first.schueler.first;
+      final inhalt = gueltigeAufgabe('t1');
+      final item = (inhalt['items'] as List).first as Map<String, dynamic>;
+      item['antwortformat'] = 'mc_1aus6';
+      item['antwort'] = {
+        'optionen': ['a', 'b', 'c', 'd', 'e', 'f'],
+        'richtig': 0,
+      };
+      final aufgaben = {'t1': inhalt};
+      final ergebnisse = [
+        for (var i = 0; i < 40; i++) ...testAntworten(person, 'paket-$i', ['t1'], aufgaben),
+      ];
+      expect(ergebnisse, hasLength(40));
+      expect(testAntworten(person, 'paket-1', ['t1'], aufgaben).single.richtig, ergebnisse[1].richtig);
+      for (final e in ergebnisse) {
+        expect(e.gegeben.isEmpty, e.richtig);
+        if (!e.richtig) expect(['b', 'c', 'd', 'e', 'f'], contains(e.gegeben));
+      }
+    });
+  });
 }

@@ -198,6 +198,23 @@ class LehreZustand extends ChangeNotifier {
   }
 
   static final _zufall = Random();
-  static String neueId(String art) =>
+
+  /// Erzeugt neue IDs; Tests setzen eine feste Folge.
+  static String Function(String art) idErzeuger = (art) =>
       '$art-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}${_zufall.nextInt(1 << 20).toRadixString(36)}';
+  static String neueId(String art) => idErzeuger(art);
+}
+
+/// Weist [p] den [personen] der Klasse [k] zu, abwechselnd auf die Gruppen
+/// verteilt, und gibt die Meldung für die Oberfläche zurück. Im Teststand
+/// wird nichts verschickt.
+String weiseZu(Paket p, TestKlasse k, List<String> personen) {
+  final verteilung = verteileGruppen(personen, p.gruppen);
+  p.zuweisungen.removeWhere((x) => x.klasse == k.id);
+  p.zuweisungen.add(Zuweisung(klasse: k.id, am: DateTime.now(), verteilung: verteilung));
+  final zahlen = [
+    for (final g in gruppenNamenBis(p.gruppen)) '$g: ${verteilung.values.where((x) => x == g).length}',
+  ].join(', ');
+  final wer = personen.length == k.schueler.length ? k.name : '${personen.length} Personen der ${k.name}';
+  return 'An $wer zugewiesen ($zahlen). Im Test wird nichts verschickt.';
 }

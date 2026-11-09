@@ -322,7 +322,8 @@ class PaketeSeite extends StatelessWidget {
                     [
                       '${p.plaetze.length} Aufgaben',
                       minutenText(zustand.minuten(p.plaetze.map((x) => x.aufgabe))),
-                      if (p.gruppen > 1) 'Gruppen ${gruppenNamen.take(p.gruppen).join('/')}',
+                      if (p.gruppen > 1) '${p.gruppen} Gruppen',
+                      if (p.foerderung != null) 'Förderpaket',
                       if (p.zuweisungen.isNotEmpty)
                         'zugewiesen: ${p.zuweisungen.map((z) => _klassenName(z.klasse)).join(', ')}',
                     ].join(' · '),

@@ -122,7 +122,7 @@ class _LehreShellState extends State<LehreShell> {
             zustand: _z,
             aktionen: _aktionen,
             klasse: k,
-            onSchuelerin: (s) => _push(SchuelerinSeite(zustand: _z, klasse: k, person: s)),
+            onSchuelerin: (s) => _push(SchuelerinSeite(zustand: _z, klasse: k, person: s, oeffne: _push)),
           ),
         ),
       ),

@@ -394,40 +394,50 @@ class AufgabeDetailSeite extends StatelessWidget {
               ),
             ),
             const Divider(),
+            // Links scrollt die Spalte mit ähnlichen Aufgaben und Informationen,
+            // die Vorschau daneben steht fest (sie scrollt nie).
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Wrap(
-                  spacing: 24,
-                  runSpacing: 24,
-                  children: [
-                    SizedBox(
-                      width: 420,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(eckdaten(a), style: text.labelMedium),
-                          const SizedBox(height: 12),
-                          _fakten(context, a),
-                          if (varianten.isNotEmpty) ...[
-                            const SizedBox(height: 20),
-                            Text('Varianten (gleichwertig)', style: text.titleMedium),
-                            const SizedBox(height: 8),
-                            for (final v in varianten) _kleineKarte(v),
-                          ],
-                          const SizedBox(height: 20),
-                          Text('Ähnliche Aufgaben (gleiche Kompetenz)', style: text.titleMedium),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 420,
+                    child: ListView(
+                      key: const ValueKey('detail-spalte'),
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        if (varianten.isNotEmpty) ...[
+                          Text('Varianten (gleichwertig)', style: text.titleMedium),
                           const SizedBox(height: 8),
-                          if (aehnlich.isEmpty)
-                            Text('Keine weiteren Aufgaben zu dieser Kompetenz.', style: text.bodySmall)
-                          else
-                            for (final v in aehnlich) _kleineKarte(v),
+                          for (final v in varianten) _kleineKarte(v),
+                          const SizedBox(height: 12),
                         ],
+                        Text('Ähnliche Aufgaben (gleiche Kompetenz)', style: text.titleMedium),
+                        const SizedBox(height: 8),
+                        if (aehnlich.isEmpty)
+                          Text('Keine weiteren Aufgaben zu dieser Kompetenz.', style: text.bodySmall)
+                        else
+                          for (final v in aehnlich) _kleineKarte(v),
+                        const SizedBox(height: 20),
+                        Text('Informationen zur Aufgabe', style: text.titleMedium),
+                        const SizedBox(height: 4),
+                        Text(eckdaten(a), style: text.labelMedium),
+                        const SizedBox(height: 8),
+                        _fakten(context, a),
+                      ],
+                    ),
+                  ),
+                  const VerticalDivider(width: 1, color: linie),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: HandyVorschau(key: ValueKey('vorschau-${a.id}'), inhalt: a.inhalt),
                       ),
                     ),
-                    HandyVorschau(key: ValueKey('vorschau-${a.id}'), inhalt: a.inhalt),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],

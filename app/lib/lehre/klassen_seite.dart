@@ -1,10 +1,12 @@
 import 'package:didaktik_kern/didaktik_kern.dart';
 import 'package:flutter/material.dart';
 
+import 'package:tuto_didaktik/editor/vorschau.dart';
 import 'package:tuto_didaktik/lehre/bausteine.dart';
 import 'package:tuto_didaktik/lehre/store_seite.dart';
 import 'package:tuto_didaktik/lehre/zustand.dart';
 import 'package:tuto_didaktik/thema.dart';
+import 'package:tuto_didaktik/vorschau/widgets/antwort_eingabe.dart';
 
 const _stufenFarben = [Color(0xFFB3261E), Color(0xFFC77700), Color(0xFF2A62C4), Color(0xFF1B6B32)];
 
@@ -116,9 +118,55 @@ class KlassenSeite extends StatelessWidget {
   }
 }
 
-/// Eine Klasse: Liste der Schüler\*innen mit Gesamtstand, bester und
-/// schwächster Kompetenz; dazu die schwächsten Kompetenzen der Klasse mit
-/// Sprung zum passenden Förderpaket.
+/// Kasten mit Titel, fester Höhe und eigenem Scrollbereich.
+class _Kasten extends StatelessWidget {
+  const _Kasten({required this.titel, required this.kind, this.aktion, this.unterzeile});
+
+  final String titel;
+  final String? unterzeile;
+  final Widget? aktion;
+  final Widget kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: linie),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(titel, style: text.titleMedium),
+                      if (unterzeile != null) Text(unterzeile!, style: text.bodySmall),
+                    ],
+                  ),
+                ),
+                ?aktion,
+              ],
+            ),
+            const SizedBox(height: 6),
+            Expanded(child: kind),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Eine Klasse: oben fest nebeneinander die Kompetenzen der Klasse und die
+/// zugewiesenen Pakete (je mit eigenem Scrollbereich), darunter die Liste der
+/// Schüler\*innen über die ganze Breite.
 class KlasseSeite extends StatelessWidget {
   const KlasseSeite({
     super.key,
@@ -133,10 +181,16 @@ class KlasseSeite extends StatelessWidget {
   final TestKlasse klasse;
   final void Function(TestSchuelerin) onSchuelerin;
 
+  /// Förderpaket nur für die Personen, die in [kompetenz] unter Stufe 2 sind.
   Future<void> _foerderpaket(BuildContext context, String kompetenz) async {
+    final ziel = [
+      for (final s in klasse.schueler)
+        if ((s.stufen[kompetenz] ?? 0) <= 1) s.id,
+    ];
     final p = zustand.neuesPaket(titel: 'Förderpaket $kompetenz (${klasse.name})')
       ..einstellung.anzahl = 4
-      ..filter.umschalten('kompetenz', kompetenz);
+      ..filter.umschalten('kompetenz', kompetenz)
+      ..foerderung = Foerderung(klasse: klasse.id, kompetenz: kompetenz, schueler: ziel);
     final f = await zustand.speicherePaket(p);
     if (!context.mounted) return;
     if (f != null) {
@@ -146,156 +200,260 @@ class KlasseSeite extends StatelessWidget {
     }
   }
 
+  /// "Paket an alle senden": ein vorhandenes Paket der ganzen Klasse zuweisen.
+  Future<void> _anAlle(BuildContext context) async {
+    final pakete = [
+      for (final p in zustand.daten.pakete)
+        if (p.plaetze.isNotEmpty && p.foerderung == null) p,
+    ];
+    if (pakete.isEmpty) {
+      await zeigeMeldung(context, 'Noch kein Paket mit Aufgaben. Unter „Pakete“ eines anlegen.', fehler: true);
+      return;
+    }
+    final gewaehlt = await showDialog<Paket>(
+      context: context,
+      builder: (d) => SimpleDialog(
+        title: Text('Paket an alle in ${klasse.name} senden'),
+        children: [
+          for (final p in pakete)
+            SimpleDialogOption(
+              key: ValueKey('an-alle-${p.id}'),
+              onPressed: () => Navigator.pop(d, p),
+              child: Text(
+                '${p.titel} · ${p.plaetze.length} Aufgaben'
+                '${p.gruppen > 1 ? ' · ${p.gruppen} Gruppen' : ''}',
+              ),
+            ),
+        ],
+      ),
+    );
+    if (gewaehlt == null || !context.mounted) return;
+    final p = Paket.fromJson(gewaehlt.toJson());
+    final meldung = weiseZu(p, klasse, [for (final s in klasse.schueler) s.id]);
+    final f = await zustand.speicherePaket(p);
+    if (context.mounted) await zeigeMeldung(context, f ?? meldung, fehler: f != null);
+  }
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final kompetenzen = klasse.schueler.isEmpty ? <String>[] : klasse.schueler.first.stufen.keys.toList();
-    final schwach = [for (final k in kompetenzen) (k, klasse.schueler.where((s) => (s.stufen[k] ?? 0) <= 1).length)]
-      ..sort((a, b) => b.$2.compareTo(a.$2));
-    final mitAufgaben = {for (final a in zustand.aufgaben) ...a.kompetenzen};
-    final pakete = [
-      for (final p in zustand.daten.pakete)
-        if (p.zuweisungen.any((z) => z.klasse == klasse.id)) p,
-    ];
-    return Column(
-      children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            children: [
-              IconButton(
-                key: const ValueKey('klasse-zurueck'),
-                tooltip: 'Zurück',
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back),
-              ),
-              Text('${klasse.name} · ${klasse.lernwelt}. Klasse', style: text.titleMedium),
-            ],
-          ),
-        ),
-        _testHinweis(),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Wrap(
-                spacing: 24,
-                runSpacing: 16,
-                crossAxisAlignment: WrapCrossAlignment.start,
+    return ListenableBuilder(
+      listenable: zustand,
+      builder: (context, _) {
+        final kompetenzen = klasse.schueler.isEmpty ? <String>[] : klasse.schueler.first.stufen.keys.toList();
+        final proKompetenz = [
+          for (final k in kompetenzen)
+            (
+              k,
+              klasse.schueler.where((s) => (s.stufen[k] ?? 0) <= 1).length,
+              klasse.schueler.isEmpty
+                  ? 0
+                  : klasse.schueler.fold<int>(0, (n, s) => n + (s.stufen[k] ?? 0)) / klasse.schueler.length,
+            ),
+        ]..sort((a, b) => b.$2.compareTo(a.$2));
+        final mitAufgaben = {for (final a in zustand.aufgaben) ...a.kompetenzen};
+        final pakete = [
+          for (final p in zustand.daten.pakete)
+            if (p.zuweisungen.any((z) => z.klasse == klasse.id)) p,
+        ];
+        final mittel = klasse.schueler.isEmpty
+            ? 0.0
+            : klasse.schueler.fold<double>(0, (n, s) => n + s.mittel) / klasse.schueler.length;
+        final verteilung = {
+          for (final g in ['sicher', 'teils sicher', 'unsicher']) g: klasse.schueler.where((s) => s.gesamt == g).length,
+        };
+        return Column(
+          children: [
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(
                 children: [
-                  SizedBox(
-                    width: 720,
-                    child: Material(
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: linie),
-                      ),
-                      child: Table(
-                        columnWidths: const {
-                          0: FlexColumnWidth(1.3),
-                          1: FlexColumnWidth(1),
-                          2: FlexColumnWidth(1.6),
-                          3: FlexColumnWidth(1.6),
-                          4: FixedColumnWidth(90),
-                        },
-                        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                        children: [
-                          TableRow(
-                            decoration: const BoxDecoration(color: flaeche),
-                            children: [
-                              for (final t in [
-                                'Name',
-                                'Gesamt',
-                                'Stärkste Kompetenz',
-                                'Schwächste Kompetenz',
-                                'Aufgaben/Woche',
-                              ])
-                                Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: Text(t, style: text.labelMedium),
-                                ),
-                            ],
-                          ),
-                          for (final s in klasse.schueler)
-                            TableRow(
-                              decoration: const BoxDecoration(
-                                border: Border(top: BorderSide(color: linie)),
-                              ),
-                              children: [
-                                InkWell(
-                                  key: ValueKey('schueler-${s.id}'),
-                                  onTap: () => onSchuelerin(s),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8),
-                                    child: Text(
-                                      s.name,
-                                      style: const TextStyle(color: tutoBlau, fontWeight: FontWeight.w600),
+                  IconButton(
+                    key: const ValueKey('klasse-zurueck'),
+                    tooltip: 'Zurück',
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back),
+                  ),
+                  Text('${klasse.name} · ${klasse.lernwelt}. Klasse', style: text.titleMedium),
+                ],
+              ),
+            ),
+            _testHinweis(),
+            SizedBox(
+              height: 270,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _Kasten(
+                        titel: 'Kompetenzen der Klasse',
+                        unterzeile:
+                            'Mittel ${ikmStufen[mittel.round().clamp(0, 3)]} · ${verteilung['sicher']} sicher, '
+                            '${verteilung['teils sicher']} teils sicher, ${verteilung['unsicher']} unsicher',
+                        kind: ListView(
+                          key: const ValueKey('kompetenzen-kasten'),
+                          children: [
+                            for (final (k, n, m) in proKompetenz)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 2),
+                                child: Row(
+                                  children: [
+                                    Expanded(child: Text(k, overflow: TextOverflow.ellipsis)),
+                                    IkmMarke(m.round().clamp(0, 3)),
+                                    SizedBox(
+                                      width: 124,
+                                      child: Text(
+                                        '$n unter Stufe 2',
+                                        textAlign: TextAlign.right,
+                                        style: text.bodySmall,
+                                      ),
                                     ),
-                                  ),
+                                    SizedBox(
+                                      width: 120,
+                                      child: n == 0
+                                          ? const SizedBox.shrink()
+                                          : TextButton(
+                                              key: ValueKey('foerder-$k'),
+                                              onPressed: mitAufgaben.contains(k)
+                                                  ? () => _foerderpaket(context, k)
+                                                  : null,
+                                              child: Text(mitAufgaben.contains(k) ? 'Förderpaket' : 'keine Aufgaben'),
+                                            ),
+                                    ),
+                                  ],
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: Align(alignment: Alignment.centerLeft, child: _gesamt(s.gesamt)),
-                                ),
-                                _kompetenzZelle(s.beste),
-                                _kompetenzZelle(s.schwaechste),
-                                Padding(padding: const EdgeInsets.all(8), child: Text('${s.aufgabenWoche}')),
-                              ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _Kasten(
+                        titel: 'Zugewiesene Pakete',
+                        aktion: FilledButton.icon(
+                          key: const ValueKey('an-alle-senden'),
+                          onPressed: () => _anAlle(context),
+                          icon: const Icon(Icons.send_outlined, size: 18),
+                          label: const Text('Paket an alle senden'),
+                        ),
+                        kind: pakete.isEmpty
+                            ? Text(
+                                'Noch keine. „Paket an alle senden“ oder im Paket-Editor „Zuweisen“.',
+                                style: text.bodySmall,
+                              )
+                            : ListView(
+                                children: [
+                                  for (final p in pakete)
+                                    ListTile(
+                                      dense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                      leading: Icon(
+                                        p.foerderung == null ? Icons.inventory_2_outlined : Icons.healing_outlined,
+                                        size: 20,
+                                      ),
+                                      title: Text(p.titel),
+                                      subtitle: Text(_paketZeile(p)),
+                                      onTap: () => aktionen.oeffnePaket(p.id),
+                                    ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Material(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(color: linie),
+                  ),
+                  child: Table(
+                    columnWidths: const {
+                      0: FlexColumnWidth(1.2),
+                      1: FlexColumnWidth(0.9),
+                      2: FlexColumnWidth(1.8),
+                      3: FlexColumnWidth(1.8),
+                      4: FlexColumnWidth(0.8),
+                      5: FlexColumnWidth(0.8),
+                    },
+                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                    children: [
+                      TableRow(
+                        decoration: const BoxDecoration(color: flaeche),
+                        children: [
+                          for (final t in [
+                            'Name',
+                            'Gesamt',
+                            'Stärkste Kompetenz',
+                            'Schwächste Kompetenz',
+                            'Aufgaben/Woche',
+                            'Pakete',
+                          ])
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(t, style: text.labelMedium),
                             ),
                         ],
                       ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 340,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Schwächen der Klasse', style: text.titleMedium),
-                        const SizedBox(height: 4),
-                        Text('Personen unter Stufe 2 pro Kompetenz', style: text.bodySmall),
-                        const SizedBox(height: 8),
-                        for (final (k, n) in schwach.take(6))
-                          ListTile(
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(k),
-                            subtitle: Text('$n von ${klasse.schueler.length}'),
-                            trailing: TextButton(
-                              key: ValueKey('foerder-$k'),
-                              onPressed: mitAufgaben.contains(k) ? () => _foerderpaket(context, k) : null,
-                              child: Text(mitAufgaben.contains(k) ? 'Förderpaket' : 'keine Aufgaben'),
-                            ),
+                      for (final s in klasse.schueler)
+                        TableRow(
+                          decoration: const BoxDecoration(
+                            border: Border(top: BorderSide(color: linie)),
                           ),
-                        const SizedBox(height: 16),
-                        Text('Zugewiesene Pakete', style: text.titleMedium),
-                        const SizedBox(height: 4),
-                        if (pakete.isEmpty)
-                          Text('Noch keine. Im Paket-Editor mit „Zuweisen“.', style: text.bodySmall)
-                        else
-                          for (final p in pakete)
-                            ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.inventory_2_outlined, size: 20),
-                              title: Text(p.titel),
-                              subtitle: Text(
-                                '${p.plaetze.length} Aufgaben${p.gruppen > 1 ? ' · Gruppen ${gruppenNamen.take(p.gruppen).join('/')}' : ''}',
+                          children: [
+                            InkWell(
+                              key: ValueKey('schueler-${s.id}'),
+                              onTap: () => onSchuelerin(s),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Text(
+                                  s.name,
+                                  style: const TextStyle(color: tutoBlau, fontWeight: FontWeight.w600),
+                                ),
                               ),
-                              onTap: () => aktionen.oeffnePaket(p.id),
                             ),
-                      ],
-                    ),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Align(alignment: Alignment.centerLeft, child: _gesamt(s.gesamt)),
+                            ),
+                            _kompetenzZelle(s.beste),
+                            _kompetenzZelle(s.schwaechste),
+                            Padding(padding: const EdgeInsets.all(8), child: Text('${s.aufgabenWoche}')),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(
+                                '${pakete.where((p) => p.zuweisungen.any((z) => z.klasse == klasse.id && z.verteilung.containsKey(s.id))).length}',
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  String _paketZeile(Paket p) {
+    final z = p.zuweisungen.firstWhere((z) => z.klasse == klasse.id);
+    return [
+      '${p.plaetze.length} Aufgaben',
+      if (p.gruppen > 1) '${p.gruppen} Gruppen',
+      z.verteilung.length == klasse.schueler.length ? 'an alle' : 'an ${z.verteilung.length} Personen',
+    ].join(' · ');
   }
 
   Widget _gesamt(String g) {
@@ -323,13 +481,21 @@ class KlasseSeite extends StatelessWidget {
   );
 }
 
-/// Eine Person: alle Kompetenzen mit iKM-Stufe und die zugewiesenen Pakete.
+/// Eine Person: alle Kompetenzen mit iKM-Stufe und die zugewiesenen Pakete;
+/// ein Paket öffnet die Antworten dieser Person.
 class SchuelerinSeite extends StatelessWidget {
-  const SchuelerinSeite({super.key, required this.zustand, required this.klasse, required this.person});
+  const SchuelerinSeite({
+    super.key,
+    required this.zustand,
+    required this.klasse,
+    required this.person,
+    required this.oeffne,
+  });
 
   final LehreZustand zustand;
   final TestKlasse klasse;
   final TestSchuelerin person;
+  final void Function(Widget seite) oeffne;
 
   @override
   Widget build(BuildContext context) {
@@ -399,7 +565,10 @@ class SchuelerinSeite extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  SizedBox(width: 100, child: IkmMarke(k.value)),
+                                  SizedBox(
+                                    width: 116,
+                                    child: Align(alignment: Alignment.centerLeft, child: IkmMarke(k.value)),
+                                  ),
                                 ],
                               ),
                             ),
@@ -408,24 +577,32 @@ class SchuelerinSeite extends StatelessWidget {
                     ),
                   ),
                   SizedBox(
-                    width: 340,
+                    width: 360,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Aufgabenpakete', style: text.titleMedium),
                         const SizedBox(height: 4),
+                        Text('Antippen zeigt die Antworten.', style: text.bodySmall),
                         if (pakete.isEmpty)
                           Text('Noch keine Pakete zugewiesen.', style: text.bodySmall)
                         else
                           for (final (p, gruppe) in pakete)
                             ListTile(
+                              key: ValueKey('ergebnis-${p.id}'),
                               dense: true,
                               contentPadding: EdgeInsets.zero,
                               title: Text(p.titel),
                               subtitle: Text('Gruppe $gruppe · ${p.plaetze.length} Aufgaben'),
-                              trailing: Text(
-                                '${(testErgebnis(person.id, p.id, person.mittel) * 100).round()} % richtig',
-                                style: text.bodySmall,
+                              trailing: Text(_quote(p, gruppe), style: text.bodySmall),
+                              onTap: () => oeffne(
+                                PaketErgebnisSeite(
+                                  zustand: zustand,
+                                  klasse: klasse,
+                                  person: person,
+                                  paket: p,
+                                  gruppe: gruppe,
+                                ),
                               ),
                             ),
                       ],
@@ -437,6 +614,176 @@ class SchuelerinSeite extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  String _quote(Paket p, String gruppe) {
+    final a = testAntworten(person, p.id, aufgabenDerGruppe(p, gruppe), _inhalte(zustand));
+    if (a.isEmpty) return '';
+    return '${a.where((x) => x.richtig).length}/${a.length} richtig';
+  }
+}
+
+Map<String, Map<String, dynamic>> _inhalte(LehreZustand z) => {for (final a in z.aufgaben) a.id: a.inhalt};
+
+/// Aufgaben, die eine Person in Gruppe [gruppe] bekommt.
+List<String> aufgabenDerGruppe(Paket p, String gruppe) {
+  if (gruppe == 'A') return [for (final x in p.plaetze) x.aufgabe];
+  final g = p.gruppenPlaetze[gruppe];
+  return [for (var i = 0; i < p.plaetze.length; i++) g?.elementAtOrNull(i)?.aufgabe ?? p.plaetze[i].aufgabe];
+}
+
+/// Antworten einer Person zu einem zugewiesenen Paket (nur selbst zugewiesene
+/// Pakete sind sichtbar, freies Üben nicht). Links die Liste, rechts fest die
+/// Aufgabe in der Vorschau.
+class PaketErgebnisSeite extends StatefulWidget {
+  const PaketErgebnisSeite({
+    super.key,
+    required this.zustand,
+    required this.klasse,
+    required this.person,
+    required this.paket,
+    required this.gruppe,
+  });
+
+  final LehreZustand zustand;
+  final TestKlasse klasse;
+  final TestSchuelerin person;
+  final Paket paket;
+  final String gruppe;
+
+  @override
+  State<PaketErgebnisSeite> createState() => _PaketErgebnisSeiteState();
+}
+
+class _PaketErgebnisSeiteState extends State<PaketErgebnisSeite> {
+  int _auswahl = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final ids = aufgabenDerGruppe(widget.paket, widget.gruppe);
+    final antworten = testAntworten(widget.person, widget.paket.id, ids, _inhalte(widget.zustand));
+    final richtig = antworten.where((a) => a.richtig).length;
+    final gewaehlt = antworten.isEmpty ? null : antworten[_auswahl.clamp(0, antworten.length - 1)];
+    final aufgabe = gewaehlt == null ? null : widget.zustand.nachId[gewaehlt.aufgabe];
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            children: [
+              IconButton(
+                key: const ValueKey('ergebnis-zurueck'),
+                tooltip: 'Zurück',
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.arrow_back),
+              ),
+              Expanded(
+                child: Text(
+                  '${widget.person.name} · ${widget.paket.titel} · Gruppe ${widget.gruppe}',
+                  style: text.titleMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text('$richtig von ${antworten.length} richtig', key: const ValueKey('ergebnis-summe')),
+              const SizedBox(width: 8),
+            ],
+          ),
+        ),
+        _testHinweis(),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 520,
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: antworten.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, i) => _antwortKarte(context, i, antworten[i]),
+                ),
+              ),
+              const VerticalDivider(width: 1, color: linie),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: aufgabe == null
+                      ? const SizedBox.shrink()
+                      : Align(
+                          alignment: Alignment.topLeft,
+                          child: HandyVorschau(
+                            key: ValueKey('ergebnis-vorschau-${aufgabe.id}'),
+                            inhalt: aufgabe.inhalt,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _antwortKarte(BuildContext context, int i, TestAntwort a) {
+    final text = Theme.of(context).textTheme;
+    final s = widget.zustand.nachId[a.aufgabe];
+    final item = s == null ? null : ladeZurVorschau(s.inhalt).aufgabe?.items.where((x) => x.id == a.itemId).firstOrNull;
+    final loesung = item == null ? '' : loesungAlsText(item).trim();
+    final (farbe, symbol, status) = a.selbstBewertet
+        ? (grauText, Icons.rate_review_outlined, 'selbst bewertet')
+        : a.richtig
+        ? (const Color(0xFF1B6B32), Icons.check_circle, 'richtig')
+        : (fehlerRot, Icons.cancel, 'falsch');
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: i == _auswahl ? tutoBlau : linie, width: i == _auswahl ? 2 : 1),
+      ),
+      child: InkWell(
+        key: ValueKey('antwort-$i'),
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => setState(() => _auswahl = i),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(symbol, color: farbe, size: 20),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${a.platz + 1}. ${s?.titel ?? a.aufgabe}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  Text(
+                    status,
+                    style: TextStyle(color: farbe, fontWeight: FontWeight.w700, fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              if (!a.richtig && !a.selbstBewertet)
+                Text('Antwort: ${a.gegeben}', style: const TextStyle(color: fehlerRot)),
+              if (a.fehlerbild != null) Text('Fehlerbild: ${a.fehlerbild}', style: text.bodySmall),
+              if (loesung.isNotEmpty) Text('Lösung: $loesung', style: text.bodyMedium),
+              const SizedBox(height: 4),
+              Text(
+                '${a.hilfen == 0 ? 'ohne Hilfe' : '${a.hilfen} ${a.hilfen == 1 ? 'Hilfe' : 'Hilfen'}'} · '
+                '${(a.sekunden / 60).toStringAsFixed(1).replaceAll('.', ',')} min',
+                style: text.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

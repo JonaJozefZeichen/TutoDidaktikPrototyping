@@ -85,7 +85,8 @@ class _VerlaufDialogState extends State<VerlaufDialog> {
               ),
             ),
             const SizedBox(width: 16),
-            SingleChildScrollView(
+            SizedBox(
+              height: 620,
               child: HandyVorschau(key: ValueKey('verlauf-$_ansicht'), inhalt: fassung.inhalt),
             ),
           ],

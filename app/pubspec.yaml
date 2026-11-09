@@ -15,6 +15,8 @@ dependencies:
   phosphor_icons: ^3.0.1
   shared_preferences: ^2.3.0
   url_launcher: ^6.3.0
+  pdf: ^3.13.1
+  printing: ^5.15.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -28,6 +30,9 @@ flutter:
   assets:
     - assets/hilfe/
     - assets/beispiel/
+    # Für den PDF-Druck der Pakete (Mathe-Zeichen wie ℕ ∈ ∩ ≤ √)
+    - assets/fonts/DejaVuSans.ttf
+    - assets/fonts/DejaVuSans-Bold.ttf
   fonts:
     - family: Open Sans
       fonts:

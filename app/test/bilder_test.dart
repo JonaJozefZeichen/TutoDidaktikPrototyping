@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tuto_didaktik/lehre/paket_editor.dart';
+import 'package:tuto_didaktik/lehre/zustand.dart';
 import 'package:tuto_didaktik/main.dart';
 
 import 'hilfsmittel.dart';
@@ -43,6 +44,10 @@ void main() {
   testWidgets('Bilder Lehrende', skip: !bilderDa, (t) async {
     PaketEditor.zufall = () => Random(1);
     addTearDown(() => PaketEditor.zufall = Random.new);
+    var nr = 0;
+    final vorher = LehreZustand.idErzeuger;
+    LehreZustand.idErzeuger = (art) => '$art-${nr++}';
+    addTearDown(() => LehreZustand.idErzeuger = vorher);
     await ladeSchriften();
     t.view.physicalSize = const Size(1600, 1000);
     t.view.devicePixelRatio = 1;
@@ -97,8 +102,43 @@ void main() {
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_paket.png'));
     await t.tap(find.byKey(const ValueKey('tab-gruppen')));
     await t.pumpAndSettle();
-    await t.tap(find.text('A/B/C'));
+    await t.tap(find.byKey(const ValueKey('gruppen-mehr')));
     await t.pumpAndSettle();
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_gruppen.png'));
+    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Klassen')));
+    await t.pumpAndSettle();
+    await t.tap(
+      find
+          .byWidgetPredicate(
+            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('klasse-'),
+          )
+          .first,
+    );
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('an-alle-senden')));
+    await t.pumpAndSettle();
+    await t.tap(
+      find.byType(SimpleDialogOption).first,
+    );
+    await t.pump(const Duration(seconds: 6));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_klasse_v2.png'));
+    await t.tap(
+      find
+          .byWidgetPredicate(
+            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('schueler-'),
+          )
+          .first,
+    );
+    await t.pumpAndSettle();
+    await t.tap(
+      find
+          .byWidgetPredicate(
+            (w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('ergebnis-'),
+          )
+          .first,
+    );
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_ergebnis.png'));
   });
 }
