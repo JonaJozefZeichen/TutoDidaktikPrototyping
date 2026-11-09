@@ -428,8 +428,6 @@ class _PaketeSeiteState extends State<PaketeSeite> {
               selected: {_filter},
               onSelectionChanged: (x) => setState(() => _filter = x.first),
             ),
-            const SizedBox(height: 4),
-            Text('Pakete des Tuto-Teams kommen später als eigene Gruppe dazu.', style: text.bodySmall),
             const SizedBox(height: 12),
             if (pakete.isEmpty)
               Text(
