@@ -408,7 +408,7 @@ class _EditorSeiteState extends State<EditorSeite> {
     final kannSpeichern = _geaendert && _jsonUngueltig.isEmpty && !_beschaeftigt;
     // Drei schwebende Pills mit festen Breiten, damit beim Durchklicken nichts springt:
     // links was offen ist, in der Mitte die Navigation, rechts die Aktionen.
-    final info = SchwebePill(
+    final info = Padding(
       padding: const EdgeInsets.fromLTRB(4, 4, 14, 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -462,7 +462,7 @@ class _EditorSeiteState extends State<EditorSeite> {
         ],
       ),
     );
-    final navigation = SchwebePill(
+    final navigation = Padding(
       padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -495,7 +495,7 @@ class _EditorSeiteState extends State<EditorSeite> {
         ],
       ),
     );
-    final aktionen = SchwebePill(
+    final aktionen = Padding(
       padding: const EdgeInsets.all(4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -554,8 +554,9 @@ class _EditorSeiteState extends State<EditorSeite> {
         ],
       ),
     );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 4, 12, 4),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: linie))),
       child: Wrap(
         spacing: 10,
         runSpacing: 10,
@@ -565,25 +566,25 @@ class _EditorSeiteState extends State<EditorSeite> {
     );
   }
 
-  /// Spalte als weiße Karte mit großem Radius, die auf der Seitenfläche schwebt.
-  Widget _spaltenKarte(Widget kind) => Container(clipBehavior: Clip.antiAlias, decoration: karte(), child: kind);
-
-  Widget _spalten(List<Befund> befunde) => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(width: 300, child: _spaltenKarte(_aufgabeSpalte(befunde))),
-        // Die Vorschau scrollt nie; sie passt sich der Höhe an.
-        Expanded(
+  /// Spalten flach auf weiß, getrennt nur durch Haarlinien.
+  Widget _spalten(List<Befund> befunde) => Row(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      SizedBox(width: 300, child: _aufgabeSpalte(befunde)),
+      const VerticalDivider(width: 1, color: linie),
+      // Die Vorschau scrollt nie; sie passt sich der Höhe an.
+      Expanded(
+        child: ColoredBox(
+          color: const Color(0xFFFAFAFA),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
             child: Center(child: HandyVorschau(inhalt: _inhalt)),
           ),
         ),
-        SizedBox(width: 380, child: _spaltenKarte(_itemSpalte())),
-      ],
-    ),
+      ),
+      const VerticalDivider(width: 1, color: linie),
+      SizedBox(width: 380, child: _itemSpalte()),
+    ],
   );
 
   // --- Felder ---

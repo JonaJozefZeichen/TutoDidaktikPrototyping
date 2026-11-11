@@ -14,15 +14,15 @@ const ziffern = [FontFeature.tabularFigures()];
 const tinte = Color(0xFF111113);
 const grauText = Color(0xFF6B6B73);
 
-/// Hintergrund der Seiten.
-const flaeche = Color(0xFFF2F2F4);
+/// Hintergrund der Seiten: weiß, Ruhe durch Weißraum statt Karten.
+const flaeche = Colors.white;
 
 /// Graue Kachel innerhalb weißer Flächen (Felder, Zweitknöpfe, Zeilen beim Darüberfahren).
-const kachel = Color(0xFFF1F1F3);
-const kachelAktiv = Color(0xFFE4E4E8);
+const kachel = Color(0xFFF4F4F5);
+const kachelAktiv = Color(0xFFEBEBED);
 
-/// Nur noch für die wenigen echten Trennlinien.
-const linie = Color(0xFFE8E8EB);
+/// Hauchdünne Trennlinien (Tabellenzeilen, Spalten).
+const linie = Color(0xFFF0F0F2);
 
 /// Einziger Farbakzent: Links und Auswahl, sparsam.
 const tutoBlau = Color(0xFF2A62C4);
@@ -39,7 +39,8 @@ const schwebeSchatten = [
   BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 1)),
 ];
 
-/// Weiße Fläche mit großem Radius, ohne Rahmen.
+/// Weiße Fläche. Auf weißem Grund ohne Rand und Schatten unsichtbar, also flach;
+/// [schwebend] nur für echte Overlays.
 BoxDecoration karte({double radius = radiusKarte, bool schwebend = false}) => BoxDecoration(
   color: Colors.white,
   borderRadius: BorderRadius.circular(radius),
@@ -96,7 +97,7 @@ ThemeData baueThema() {
       style: OutlinedButton.styleFrom(
         shape: pill,
         side: BorderSide.none,
-        backgroundColor: kachelAktiv,
+        backgroundColor: kachel,
         foregroundColor: tinte,
         disabledForegroundColor: const Color(0xFFAAAAB2),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -141,9 +142,9 @@ ThemeData baueThema() {
     ),
     navigationRailTheme: const NavigationRailThemeData(
       backgroundColor: Colors.transparent,
-      indicatorColor: tinte,
+      indicatorColor: kachel,
       indicatorShape: StadiumBorder(),
-      selectedIconTheme: IconThemeData(color: Colors.white, size: 20),
+      selectedIconTheme: IconThemeData(color: tinte, size: 20),
       unselectedIconTheme: IconThemeData(color: grauText, size: 20),
       selectedLabelTextStyle: TextStyle(fontFamily: schrift, fontSize: 11.5, fontWeight: FontWeight.w600, color: tinte),
       unselectedLabelTextStyle: TextStyle(fontFamily: schrift, fontSize: 11.5, color: grauText),
@@ -220,7 +221,7 @@ ThemeData baueThema() {
 
 const statusNamen = {'entwurf': 'Entwurf', 'geprueft': 'Geprüft', 'live': 'Live', 'zurueckgezogen': 'Zurückgezogen'};
 
-/// Status als Pill mit Punkt; zusätzlich zur Farbe steht immer der Name dabei.
+/// Status als Punkt mit Text, ohne Hintergrund; zusätzlich zur Farbe steht immer der Name dabei.
 class StatusPlakette extends StatelessWidget {
   const StatusPlakette(this.status, {super.key, this.korrektur = false, this.approvals = 0});
 
@@ -237,9 +238,8 @@ class StatusPlakette extends StatelessWidget {
       _ => const Color(0xFFA1A1AA),
     };
     final text = korrektur ? 'Live, Korrektur $approvals/2' : statusNamen[status] ?? status;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
-      decoration: const ShapeDecoration(color: kachel, shape: StadiumBorder()),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -275,6 +275,44 @@ class SchwebePill extends StatelessWidget {
   );
 }
 
+/// Filter- und Zähler-Chip: grauer Text mit Zahl, aktiv schwarz auf hellgrau.
+class ZaehlerChip extends StatelessWidget {
+  const ZaehlerChip({super.key, required this.label, required this.zahl, this.aktiv = false, this.onTap});
+
+  final String label;
+  final int zahl;
+  final bool aktiv;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: aktiv ? kachelAktiv : kachel,
+    shape: const StadiumBorder(),
+    child: InkWell(
+      customBorder: const StadiumBorder(),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: '$label ',
+                style: TextStyle(color: aktiv ? tinte : grauText, fontWeight: FontWeight.w500),
+              ),
+              TextSpan(
+                text: '$zahl',
+                style: const TextStyle(color: tinte, fontWeight: FontWeight.w600, fontFeatures: ziffern),
+              ),
+            ],
+          ),
+          style: const TextStyle(fontSize: 12.5),
+        ),
+      ),
+    ),
+  );
+}
+
 /// Angemeldete Testperson als Pill mit Initialen und "Wechseln".
 class PersonPill extends StatelessWidget {
   const PersonPill({super.key, required this.name, required this.rolle, required this.onWechseln});
@@ -292,18 +330,17 @@ class PersonPill extends StatelessWidget {
         .take(2)
         .map((w) => w[0].toUpperCase())
         .join();
-    return Container(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
-      decoration: karte(radius: 999),
+    return Padding(
+      padding: const EdgeInsets.all(4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           CircleAvatar(
-            radius: 14,
-            backgroundColor: tinte,
+            radius: 13,
+            backgroundColor: kachel,
             child: Text(
               initialen,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+              style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: tinte),
             ),
           ),
           const SizedBox(width: 8),

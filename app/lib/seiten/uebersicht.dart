@@ -39,10 +39,14 @@ class UebersichtSeite extends StatelessWidget {
       children: [
         Text('Übersicht', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
+        // Bestand als Zähler-Chips, wie in der Aufgabenliste.
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [for (final s in statusNamen.keys) _Kachel(titel: statusNamen[s]!, zahl: zahl(s))],
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            ZaehlerChip(label: 'Gesamt', zahl: zeilen.length),
+            for (final s in statusNamen.keys) ZaehlerChip(label: statusNamen[s]!, zahl: zahl(s)),
+          ],
         ),
         const SizedBox(height: 20),
         _Abschnitt(
@@ -72,35 +76,6 @@ class UebersichtSeite extends StatelessWidget {
       ],
     );
   }
-}
-
-class _Kachel extends StatelessWidget {
-  const _Kachel({required this.titel, required this.zahl});
-  final String titel;
-  final int zahl;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 150,
-    padding: const EdgeInsets.all(12),
-    decoration: karte(radius: 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$zahl',
-          style: const TextStyle(
-            fontFamily: schrift,
-            fontFeatures: ziffern,
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: tinte,
-          ),
-        ),
-        Text(titel, style: Theme.of(context).textTheme.bodySmall),
-      ],
-    ),
-  );
 }
 
 class _Abschnitt extends StatefulWidget {
@@ -136,8 +111,9 @@ class _AbschnittState extends State<_Abschnitt> {
             Text('Nichts offen.', style: Theme.of(context).textTheme.bodySmall)
           else
             Container(
-              clipBehavior: Clip.antiAlias,
-              decoration: karte(),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: linie)),
+              ),
               child: Column(
                 children: [
                   const AufgabenKopfzeile(),

@@ -205,15 +205,14 @@ class _LehreShellState extends State<LehreShell> {
           Expanded(
             child: Row(
               children: [
-                // Navigation als schwebende Pill links, gleich breit wie im Didaktik-Tool.
+                // Navigation flach links, gleich breit wie im Didaktik-Tool.
                 Align(
                   alignment: Alignment.topCenter,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
-                    child: SchwebePill(
-                      radius: 30,
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      // Nur so hoch wie die Einträge, damit die Pill schwebt statt die Seite zu füllen.
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                      // Nur so hoch wie die Einträge.
                       child: SizedBox(
                         height: 8 + 4 * 68.0,
                         child: NavigationRail(
