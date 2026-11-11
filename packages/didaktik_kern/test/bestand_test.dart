@@ -164,6 +164,45 @@ void main() {
       expect(b.eintrag('a1').status, 'geprueft');
     });
 
+    test('eigenes Approval zurücknehmen macht aus geprueft wieder entwurf', () {
+      final b = mitAufgabe('a1');
+      b.approval('a1', 1, anna);
+      b.approvalZuruecknehmen('a1', 1, anna);
+      expect(b.eintrag('a1').status, 'entwurf');
+      expect(b.eintrag('a1').aktuell.approvals, isEmpty);
+      expect(b.eintrag('a1').ereignisse.last.art, 'approval_zurueck');
+      // Danach darf dieselbe Person wieder freigeben.
+      b.approval('a1', 1, anna);
+      expect(b.eintrag('a1').status, 'geprueft');
+    });
+
+    test('fremdes Approval und Live-Fassung lassen sich nicht zurücknehmen', () {
+      final b = mitAufgabe('a1');
+      b.approval('a1', 1, anna);
+      expect(
+        () => b.approvalZuruecknehmen('a1', 1, ben),
+        throwsA(isA<RegelFehler>().having((e) => e.code, 'code', 'kein_approval')),
+      );
+      b.approval('a1', 1, ben);
+      expect(
+        () => b.approvalZuruecknehmen('a1', 1, anna),
+        throwsA(isA<RegelFehler>().having((e) => e.code, 'code', 'schon_live')),
+      );
+      expect(b.eintrag('a1').status, 'live');
+    });
+
+    test('Approval auf eine Korrektur zurücknehmen: Aufgabe bleibt live', () {
+      final b = mitAufgabe('a1');
+      b.approval('a1', 1, anna);
+      b.approval('a1', 1, ben);
+      b.speichere('a1', {...b.eintrag('a1').aktuell.inhalt, 'titel': 'Korrektur'}, anna, basis: 1);
+      b.approval('a1', 2, anna);
+      b.approvalZuruecknehmen('a1', 2, anna);
+      expect(b.eintrag('a1').status, 'live');
+      expect(b.eintrag('a1').liveFassung, 1);
+      expect(b.eintrag('a1').aktuell.approvals, isEmpty);
+    });
+
     test('bearbeitende Person darf eines der Approvals geben', () {
       final b = mitAufgabe('a1');
       b.speichere('a1', {...b.eintrag('a1').aktuell.inhalt, 'titel': 'Neu'}, anna, basis: 1);

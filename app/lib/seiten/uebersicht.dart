@@ -141,8 +141,9 @@ class _AbschnittState extends State<_Abschnitt> {
               ),
               child: Column(
                 children: [
+                  const AufgabenKopfzeile(),
                   for (var i = 0; i < sichtbar.length; i++) ...[
-                    if (i > 0) const Divider(),
+                    const Divider(),
                     AufgabenZeile(
                       zeile: sichtbar[i],
                       onTap: () => widget.onOeffnen(sichtbar[i]['id'] as String, reihenfolge),

@@ -90,6 +90,10 @@ class Api {
     await _post('/aufgaben/${_id(id)}/approval', {'fassung': fassung}) as Map<String, dynamic>,
   );
 
+  Future<AufgabeDetail> approvalZuruecknehmen(String id, int fassung) async => AufgabeDetail.fromJson(
+    await _post('/aufgaben/${_id(id)}/approval-zuruecknehmen', {'fassung': fassung}) as Map<String, dynamic>,
+  );
+
   Future<AufgabeDetail> zurueckziehen(String id, String? grund) async => AufgabeDetail.fromJson(
     await _post('/aufgaben/${_id(id)}/zurueckziehen', {'grund': grund}) as Map<String, dynamic>,
   );

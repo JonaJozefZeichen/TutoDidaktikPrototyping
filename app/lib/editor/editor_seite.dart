@@ -92,21 +92,50 @@ class _EditorSeiteState extends State<EditorSeite> {
     }
   }
 
-  /// Fragt bei ungespeicherten Änderungen nach. `true` = weitermachen.
+  /// Fragt bei ungespeicherten Änderungen nach: speichern, weiter bearbeiten
+  /// oder verwerfen. `true` = weitermachen (gespeichert oder verworfen).
   Future<bool> _darfVerlassen() async {
     if (!_geaendert) return true;
-    final ok = await showDialog<bool>(
+    final kannSpeichern = _jsonUngueltig.isEmpty;
+    final wahl = await showDialog<_Verlassen>(
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Ungespeicherte Änderungen'),
-        content: const Text('Die Änderungen an dieser Aufgabe gehen verloren.'),
+        content: SizedBox(
+          width: 420,
+          child: Text(
+            kannSpeichern
+                ? 'Willst du die Änderungen an dieser Aufgabe speichern, bevor du weitergehst?'
+                : 'Ein JSON-Feld ist ungültig, deshalb kann die Aufgabe gerade nicht gespeichert werden. Beim Weitergehen gehen die Änderungen verloren.',
+          ),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Weiter bearbeiten')),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Verwerfen')),
+          TextButton(
+            key: const ValueKey('verlassen-verwerfen'),
+            style: TextButton.styleFrom(foregroundColor: fehlerRot),
+            onPressed: () => Navigator.pop(c, _Verlassen.verwerfen),
+            child: const Text('Verwerfen'),
+          ),
+          TextButton(onPressed: () => Navigator.pop(c), child: const Text('Weiter bearbeiten')),
+          if (kannSpeichern)
+            FilledButton(
+              key: const ValueKey('verlassen-speichern'),
+              onPressed: () => Navigator.pop(c, _Verlassen.speichern),
+              child: const Text('Speichern'),
+            ),
         ],
       ),
     );
-    return ok ?? false;
+    switch (wahl) {
+      case _Verlassen.verwerfen:
+        return true;
+      case _Verlassen.speichern:
+        await _speichere();
+        // Weiter nur, wenn wirklich gespeichert wurde (Abbruch oder Fehler: bleiben).
+        return mounted && !_geaendert;
+      case null:
+        return false;
+    }
   }
 
   Future<void> _gehe(int richtung) async {
@@ -209,6 +238,16 @@ class _EditorSeiteState extends State<EditorSeite> {
       d.eintrag.status == 'live' && !d.eintrag.hatKorrektur ? 'Aufgabe ist live' : 'Approval gegeben',
     );
     if (_weiterNachApproval && _position + 1 < widget.reihenfolge.length) await _gehe(1);
+  }
+
+  Future<void> _approvalZuruecknehmen() async {
+    final e = _eintrag;
+    if (e == null) return;
+    final d = await _aktion(() => widget.api.approvalZuruecknehmen(_id, e.aktuell.nr));
+    if (d == null || !mounted) return;
+    _uebernimm(d.eintrag, neuAufbauen: false);
+    widget.onGeaendert();
+    zeigeMeldung(context, 'Approval zurückgenommen');
   }
 
   Future<void> _zurueckziehen() async {
@@ -415,6 +454,13 @@ class _EditorSeiteState extends State<EditorSeite> {
               child: const Text('Approval geben'),
             ),
           ),
+          // Eigenes Approval zurücknehmen, solange die Fassung noch nicht live ist.
+          if (approvals.any((a) => a.person == widget.person.id) && e.liveFassung != e.aktuell.nr)
+            TextButton(
+              key: const ValueKey('approval-zuruecknehmen'),
+              onPressed: _beschaeftigt || _geaendert ? null : _approvalZuruecknehmen,
+              child: const Text('Approval zurücknehmen'),
+            ),
           if (e.status == 'live')
             OutlinedButton(
               key: const ValueKey('zurueckziehen'),
@@ -584,16 +630,29 @@ class _EditorSeiteState extends State<EditorSeite> {
           key: const ValueKey('fehlerliste'),
           constraints: const BoxConstraints(maxHeight: 170),
           padding: const EdgeInsets.all(10),
-          color: fehler.isEmpty ? const Color(0xFFE2F3E6) : const Color(0xFFFBE6E4),
+          color: fehler.isNotEmpty
+              ? const Color(0xFFFBE6E4)
+              : hinweise.isNotEmpty
+              ? const Color(0xFFFBF1D9)
+              : const Color(0xFFE2F3E6),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Drei Zustände: Fehler (rot), nur Hinweise (gelb), alles in Ordnung (grün).
                 Text(
-                  fehler.isEmpty ? 'Keine Fehler' : '${fehler.length} Fehler',
+                  [
+                    if (fehler.isNotEmpty) '${fehler.length} Fehler',
+                    if (hinweise.isNotEmpty) '${hinweise.length} ${hinweise.length == 1 ? 'Hinweis' : 'Hinweise'}',
+                    if (fehler.isEmpty && hinweise.isEmpty) 'Alles in Ordnung',
+                  ].join(', '),
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: fehler.isEmpty ? const Color(0xFF1B6B32) : fehlerRot,
+                    color: fehler.isNotEmpty
+                        ? fehlerRot
+                        : hinweise.isNotEmpty
+                        ? hinweisGelb
+                        : const Color(0xFF1B6B32),
                   ),
                 ),
                 for (final b in [...fehler, ...hinweise])
@@ -911,3 +970,6 @@ class _EditorSeiteState extends State<EditorSeite> {
     );
   }
 }
+
+/// Antwort im Dialog "Ungespeicherte Änderungen"; `null` = weiter bearbeiten.
+enum _Verlassen { speichern, verwerfen }

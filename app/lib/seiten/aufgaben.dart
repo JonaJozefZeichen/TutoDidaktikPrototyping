@@ -1,3 +1,4 @@
+import 'package:didaktik_kern/didaktik_kern.dart' show formatNamen;
 import 'package:flutter/material.dart';
 
 import 'package:tuto_didaktik/thema.dart';
@@ -24,6 +25,23 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
   String? _kompetenz;
   String? _format;
   String? _herkunft;
+  Spalte? _sortiert;
+  bool _absteigend = false;
+
+  void _sortiereNach(Spalte s) => setState(() {
+    if (_sortiert == s) {
+      // Dritter Klick hebt die Sortierung wieder auf.
+      if (_absteigend) {
+        _sortiert = null;
+        _absteigend = false;
+      } else {
+        _absteigend = true;
+      }
+    } else {
+      _sortiert = s;
+      _absteigend = false;
+    }
+  });
 
   @override
   void didUpdateWidget(covariant AufgabenSeite old) {
@@ -33,7 +51,7 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
 
   List<Map<String, dynamic>> get _treffer {
     final q = _suche.trim().toLowerCase();
-    return widget.zeilen.where((z) {
+    final liste = widget.zeilen.where((z) {
       if (_status != null && z['status'] != _status) return false;
       if (_lernwelt != null && z['lernwelt'] != _lernwelt) return false;
       if (_themenbereich != null && !(z['themenbereiche'] as List).contains(_themenbereich)) return false;
@@ -44,6 +62,15 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
       if (q.isEmpty) return true;
       return '${z['id']} ${z['titel']} ${z['aufgabenstellung']}'.toLowerCase().contains(q);
     }).toList();
+    final s = _sortiert;
+    if (s == null) return liste;
+    // Stabil sortieren, damit gleiche Werte ihre Lernplan-Reihenfolge behalten.
+    final indiziert = [for (var i = 0; i < liste.length; i++) (i, liste[i])];
+    indiziert.sort((a, b) {
+      final c = s.vergleiche(a.$2, b.$2);
+      return c != 0 ? (_absteigend ? -c : c) : a.$1.compareTo(b.$1);
+    });
+    return [for (final (_, z) in indiziert) z];
   }
 
   List<String> _werte(String key) {
@@ -134,7 +161,13 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
               _filter('Themenbereich', _themenbereich, _werte('themenbereiche'), (v) => _themenbereich = v),
               _filter('Level', _level, _werte('level'), (v) => _level = v),
               _filter('Kompetenz', _kompetenz, _werte('kompetenzen'), (v) => _kompetenz = v),
-              _filter('Antwortformat', _format, _werte('formate'), (v) => _format = v),
+              _filter(
+                'Antwortformat',
+                _format,
+                _werte('formate'),
+                (v) => _format = v,
+                name: (f) => formatNamen[f] ?? f,
+              ),
               _filter('Herkunft', _herkunft, _werte('herkunft'), (v) => _herkunft = v),
             ],
           ),
@@ -151,16 +184,122 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
                 border: Border.all(color: linie),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: ListView.separated(
-                itemCount: treffer.length,
-                separatorBuilder: (_, _) => const Divider(),
-                itemBuilder: (context, i) => AufgabenZeile(
-                  zeile: treffer[i],
-                  onTap: () => widget.onOeffnen(treffer[i]['id'] as String, reihenfolge),
-                ),
+              child: Column(
+                children: [
+                  AufgabenKopfzeile(sortiert: _sortiert, absteigend: _absteigend, onSortiere: _sortiereNach),
+                  const Divider(),
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: treffer.length,
+                      separatorBuilder: (_, _) => const Divider(),
+                      itemBuilder: (context, i) => AufgabenZeile(
+                        zeile: treffer[i],
+                        onTap: () => widget.onOeffnen(treffer[i]['id'] as String, reihenfolge),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Spalten der Aufgabenliste. Kopfzeile und Zeilen nutzen dieselben Breiten.
+enum Spalte {
+  status('Status', breite: 150),
+  titel('Titel', flex: 3),
+  level('Level', flex: 2),
+  typ('Typ', flex: 2),
+  approvals('Approvals', breite: 90),
+  fehler('Fehler', breite: 80);
+
+  const Spalte(this.ueberschrift, {this.breite, this.flex = 1});
+
+  final String ueberschrift;
+  final double? breite;
+  final int flex;
+
+  static const _statusReihe = ['entwurf', 'geprueft', 'live', 'zurueckgezogen'];
+
+  int vergleiche(Map<String, dynamic> a, Map<String, dynamic> b) => switch (this) {
+    Spalte.status => _statusReihe.indexOf(a['status'] as String).compareTo(_statusReihe.indexOf(b['status'] as String)),
+    Spalte.titel => '${a['titel'] ?? ''}'.toLowerCase().compareTo('${b['titel'] ?? ''}'.toLowerCase()),
+    Spalte.level => _erstes(a['level']).compareTo(_erstes(b['level'])),
+    Spalte.typ => _typText(a).compareTo(_typText(b)),
+    Spalte.approvals => (a['approvals'] as int).compareTo(b['approvals'] as int),
+    Spalte.fehler => (a['fehler'] as int).compareTo(b['fehler'] as int),
+  };
+
+  static String _erstes(Object? liste) => liste is List && liste.isNotEmpty ? '${liste.first}' : '';
+
+  /// Lesbare Typen wie im Katalog ("1 aus 6" statt "mc_1aus6").
+  static String _typText(Map<String, dynamic> z) =>
+      [for (final f in z['formate'] as List) formatNamen[f] ?? '$f'].join(', ');
+
+  Widget zelle(Widget kind) =>
+      breite != null ? SizedBox(width: breite, child: kind) : Expanded(flex: flex, child: kind);
+}
+
+/// Spaltenüberschriften; Klick sortiert auf-, dann absteigend, dann wieder nach Lernplan.
+class AufgabenKopfzeile extends StatelessWidget {
+  const AufgabenKopfzeile({super.key, this.sortiert, this.absteigend = false, this.onSortiere});
+
+  final Spalte? sortiert;
+  final bool absteigend;
+
+  /// `null` = nur Überschriften, nicht sortierbar (z. B. in der Übersicht).
+  final ValueChanged<Spalte>? onSortiere;
+
+  @override
+  Widget build(BuildContext context) {
+    final stil = Theme.of(context).textTheme.labelMedium;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: [
+          for (final s in Spalte.values)
+            s.zelle(
+              Align(
+                alignment: Alignment.centerLeft,
+                child: InkWell(
+                  key: ValueKey('sortiere-${s.name}'),
+                  borderRadius: BorderRadius.circular(4),
+                  onTap: onSortiere == null ? null : () => onSortiere!(s),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            s.ueberschrift,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: sortiert == s ? stil?.copyWith(color: tinte) : stil,
+                          ),
+                        ),
+                        if (onSortiere != null) ...[
+                          const SizedBox(width: 2),
+                          Icon(
+                            sortiert != s
+                                ? Icons.unfold_more
+                                : absteigend
+                                ? Icons.arrow_downward
+                                : Icons.arrow_upward,
+                            size: 13,
+                            color: sortiert == s ? tinte : const Color(0xFFB0B8C4),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -177,15 +316,15 @@ class AufgabenZeile extends StatelessWidget {
   Widget build(BuildContext context) {
     final fehler = zeile['fehler'] as int;
     final approvals = zeile['approvals'] as int;
+    final klein = Theme.of(context).textTheme.bodySmall;
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         child: Row(
           children: [
-            SizedBox(
-              width: 150,
-              child: Align(
+            Spalte.status.zelle(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: StatusPlakette(
                   zeile['status'] as String,
@@ -194,9 +333,8 @@ class AufgabenZeile extends StatelessWidget {
                 ),
               ),
             ),
-            Expanded(
-              flex: 3,
-              child: Column(
+            Spalte.titel.zelle(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('${zeile['titel'] ?? '(ohne Titel)'}', maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -208,26 +346,18 @@ class AufgabenZeile extends StatelessWidget {
                 ],
               ),
             ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                (zeile['level'] as List).join(', '),
-                style: Theme.of(context).textTheme.bodySmall,
-                overflow: TextOverflow.ellipsis,
+            Spalte.level.zelle(
+              Text((zeile['level'] as List).join(', '), style: klein, overflow: TextOverflow.ellipsis),
+            ),
+            Spalte.typ.zelle(
+              Tooltip(
+                message: (zeile['formate'] as List).join(', '),
+                child: Text(Spalte._typText(zeile), style: klein, overflow: TextOverflow.ellipsis),
               ),
             ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                (zeile['formate'] as List).join(', '),
-                style: Theme.of(context).textTheme.bodySmall,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            SizedBox(width: 90, child: Text('Approvals $approvals/2', style: Theme.of(context).textTheme.bodySmall)),
-            SizedBox(
-              width: 80,
-              child: fehler > 0
+            Spalte.approvals.zelle(Text('$approvals/2', style: klein)),
+            Spalte.fehler.zelle(
+              fehler > 0
                   ? Text(
                       '$fehler Fehler',
                       style: const TextStyle(fontSize: 12, color: fehlerRot, fontWeight: FontWeight.w600),

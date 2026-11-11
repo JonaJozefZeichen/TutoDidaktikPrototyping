@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tuto_didaktik/api.dart';
 import 'package:tuto_didaktik/editor/bausteine.dart';
 import 'package:tuto_didaktik/main.dart';
+import 'package:tuto_didaktik/seiten/aufgaben.dart';
 
 import 'hilfsmittel.dart';
 
@@ -156,6 +157,63 @@ void main() {
     expect(find.textContaining('von $aufgabenZahl Aufgaben'), findsOneWidget);
   });
 
+  testWidgets('Ungespeicherte Änderungen lassen sich beim Verlassen speichern', (t) async {
+    final api = testApi();
+    await starte(t, api);
+    await oeffneAufgabe(t, id);
+    await t.enterText(find.byType(TextField).first, 'Beim Verlassen gespeichert');
+    await t.pumpAndSettle();
+    await t.tap(find.byTooltip('Zurück'));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('verlassen-speichern')));
+    await t.pumpAndSettle();
+    expect(find.textContaining('von $aufgabenZahl Aufgaben'), findsOneWidget); // Liste ist wieder da
+    expect((await api.aufgabe(id)).eintrag.aktuell.inhalt['titel'], 'Beim Verlassen gespeichert');
+  });
+
+  testWidgets('Approval zurücknehmen macht aus Geprüft wieder Entwurf', (t) async {
+    final api = testApi();
+    await starte(t, api);
+    await oeffneAufgabe(t, id);
+    // Nach dem Approval nicht weiterspringen, damit dieselbe Aufgabe offen bleibt.
+    await t.tap(
+      find.descendant(
+        of: find.ancestor(of: find.text('Nach Approval zur nächsten'), matching: find.byType(Row)).first,
+        matching: find.byType(Checkbox),
+      ),
+    );
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('approval')));
+    await t.pumpAndSettle();
+    expect((await api.aufgabe(id)).eintrag.status, 'geprueft');
+    await t.tap(find.byKey(const ValueKey('approval-zuruecknehmen')));
+    await t.pumpAndSettle();
+    final e = (await api.aufgabe(id)).eintrag;
+    expect(e.status, 'entwurf');
+    expect(e.aktuell.approvals, isEmpty);
+    expect(knopf(t, 'approval').onPressed, isNotNull);
+  });
+
+  testWidgets('Aufgabenliste sortiert nach Spalten und zeigt lesbare Typen', (t) async {
+    await starte(t, testApi());
+    await oeffneListe(t);
+    expect(find.text('1 aus 6'), findsWidgets);
+    expect(find.text('mc_1aus6'), findsNothing);
+    List<String> titel() => [
+      for (final w in t.widgetList<Text>(
+        find.descendant(of: find.byType(AufgabenZeile), matching: find.byType(Text)),
+      ))
+        if (w.style == null) w.data ?? '',
+    ];
+    await t.tap(find.byKey(const ValueKey('sortiere-titel')));
+    await t.pumpAndSettle();
+    final auf = titel();
+    expect(auf, [...auf]..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase())));
+    await t.tap(find.byKey(const ValueKey('sortiere-titel')));
+    await t.pumpAndSettle();
+    expect(titel(), auf.reversed.toList());
+  });
+
   testWidgets('Konflikt: zwei Personen an derselben Aufgabe', (t) async {
     final api = testApi();
     await starte(t, api);
@@ -251,7 +309,7 @@ void main() {
       await t.enterText(find.widgetWithText(TextField, 'Text eingeben').last, 'Neue Antwort');
       await t.pumpAndSettle();
       expect(find.textContaining('Zu viele richtige'), findsNothing);
-      expect(find.text('Keine Fehler'), findsOneWidget);
+      expect(find.textContaining(RegExp(r'^\d+ Fehler')), findsNothing);
       await t.tap(find.byKey(const ValueKey('speichern')));
       await t.pumpAndSettle();
       expect(knopf(t, 'approval').onPressed, isNotNull);
@@ -277,7 +335,7 @@ void main() {
       await t.pumpAndSettle();
       expect(find.textContaining('Zu viele Antworten'), findsNothing);
       await haken(t, 0);
-      expect(find.text('Keine Fehler'), findsOneWidget);
+      expect(find.textContaining(RegExp(r'^\d+ Fehler')), findsNothing);
       await t.tap(find.byKey(const ValueKey('speichern')));
       await t.pumpAndSettle();
       final item = antwortVon((await api.aufgabe(a01)).eintrag);
