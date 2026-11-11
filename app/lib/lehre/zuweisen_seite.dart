@@ -207,8 +207,8 @@ class _ZuweisenSeiteState extends State<ZuweisenSeite> {
     }
     await zeigeMeldung(
       context,
-      '„${p.anzeigeName()}“ an ${empfaenger.values.fold(0, (n, l) => n + l.length)} Personen verschickt. '
-      'Im Test wird nichts verschickt.',
+      '„${p.anzeigeName()}“ an ${empfaenger.values.fold(0, (n, l) => n + l.length)} Personen verschickt.'
+      '${z.praesentation ? '' : ' Im Test wird nichts verschickt.'}',
     );
     if (mounted) Navigator.of(context).maybePop();
   }
@@ -508,7 +508,7 @@ class _ZuweisungSeiteState extends State<ZuweisungSeite> {
           child: Text(
             'Verschickt am ${datumText(zuweisung.am)} · '
             '${zuweisung.abgabe == null ? 'ohne Abgabedatum' : 'Abgabe bis ${datumText(zuweisung.abgabe!)}'} · '
-            '${zuweisung.gruppen == 1 ? 'alle dieselben Aufgaben' : '${zuweisung.gruppen} Gruppen'} · Testklasse',
+            '${zuweisung.gruppen == 1 ? 'alle dieselben Aufgaben' : '${zuweisung.gruppen} Gruppen'} · ${klasse.name}',
             style: const TextStyle(fontSize: 12, color: hinweisGelb, fontWeight: FontWeight.w600),
           ),
         ),

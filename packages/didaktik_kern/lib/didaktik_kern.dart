@@ -8,6 +8,7 @@ export 'src/felder.dart';
 export 'src/lehre/filter.dart';
 export 'src/lehre/lehrbereich.dart';
 export 'src/lehre/paket.dart';
+export 'src/lehre/praesentation.dart';
 export 'src/lehre/store.dart';
 export 'src/lehre/testklassen.dart';
 export 'src/modelle.dart';

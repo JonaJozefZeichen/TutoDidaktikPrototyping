@@ -496,4 +496,91 @@ void main() {
       expect(z.pakete.single.zuweisungen.single.id, p.zuweisungen.single.id);
     });
   });
+
+  group('Präsentations-Zugang', () {
+    List<StoreAufgabe> katalog() {
+      final b = Bestand()..importiere(startbestand.readAsStringSync(), null);
+      return storeAufgaben(b.eintraege.values, auchUnfreigegebene: true);
+    }
+
+    final jetzt = DateTime(2026, 11, 20, 10);
+
+    test('Beispieldaten sind gefüllt, stimmig und bei gleichen Eingaben gleich', () {
+      final aufgaben = katalog();
+      final d = praesentationsDaten(praesentationPersonId, aufgaben, jetzt);
+      expect(jsonEncode(praesentationsDaten(praesentationPersonId, aufgaben, jetzt).toJson()), jsonEncode(d.toJson()));
+      expect(jsonEncode(LehrDaten.fromJson(d.toJson()).toJson()), jsonEncode(d.toJson()));
+
+      final ids = {for (final a in aufgaben) a.id};
+      final klasse = praesentationKlassenId(praesentationPersonId);
+      final konten = {for (final k in praesentationKonten.keys) '$praesentationPersonId-$k'};
+      expect(d.pakete.length, greaterThanOrEqualTo(3));
+      expect({for (final p in d.pakete) p.id}.length, d.pakete.length);
+      final zuweisungen = {
+        for (final p in d.pakete)
+          for (final z in p.zuweisungen) z.id: (p, z),
+      };
+      expect(zuweisungen.length, greaterThanOrEqualTo(2));
+      for (final p in d.pakete) {
+        expect(p.plaetze, isNotEmpty, reason: p.titel);
+        expect(p.plaetze.every((x) => ids.contains(x.aufgabe)), isTrue, reason: p.titel);
+        for (final z in p.zuweisungen) {
+          expect(z.klasse, klasse);
+          expect(konten.containsAll(z.verteilung.keys), isTrue);
+        }
+      }
+      expect(d.versuche, isNotEmpty);
+      for (final v in d.versuche) {
+        final (p, z) = zuweisungen[v.zuweisung]!;
+        expect(v.paket, p.id);
+        expect(z.verteilung.containsKey(v.konto), isTrue);
+        expect(p.plaetze.any((x) => x.aufgabe == v.aufgabe), isTrue);
+      }
+      for (final a in d.abgaben) {
+        expect(zuweisungen[a.zuweisung]!.$2.verteilung.containsKey(a.konto), isTrue);
+      }
+      // Abgeschlossen, laufend und überfällig kommen alle vor.
+      final staende = [
+        for (final (_, z) in zuweisungen.values)
+          for (final k in z.verteilung.keys) abgabeStand(k, z, d.abgaben, jetzt),
+      ];
+      expect(staende.any((s) => s.fertig && !s.zuSpaet), isTrue);
+      expect(staende.any((s) => s.fertig && s.zuSpaet), isTrue);
+      expect(staende.any((s) => !s.fertig && s.zuSpaet), isTrue);
+      expect(staende.any((s) => !s.fertig && !s.zuSpaet), isTrue);
+    });
+
+    test('die Klasse zeigt unterschiedliche Stufen und Förderbedarf', () {
+      final aufgaben = katalog();
+      final d = praesentationsDaten(praesentationPersonId, aufgaben, jetzt);
+      final itemKompetenz = {
+        for (final a in aufgaben)
+          for (final i in alleItems(a.inhalt))
+            if (i['item_id'] is String && i['kompetenz'] is String) i['item_id'] as String: i['kompetenz'] as String,
+      };
+      final k = testKlasse(
+        praesentationPersonId,
+        versuche: d.versuche,
+        itemKompetenz: itemKompetenz,
+        jetzt: jetzt,
+        kuerzel: praesentationKlassenKuerzel,
+        name: praesentationKlassenName,
+        konten: praesentationKonten,
+      );
+      expect(k.name, '5B');
+      expect(k.schueler, hasLength(22));
+      expect(k.id, praesentationKlassenId(praesentationPersonId));
+      expect({for (final s in k.schueler) s.gesamt}, containsAll(['sicher', 'teils sicher']));
+      expect(k.schueler.any((s) => s.stufen.values.any((v) => v <= 1)), isTrue);
+      expect(k.schueler.where((s) => s.aufgabenWoche > 0).length, greaterThan(5));
+    });
+
+    test('ohne Aufgaben bleibt die Ablage leer, die Testklasse bleibt unverändert', () {
+      expect(praesentationsDaten(praesentationPersonId, const [], jetzt).pakete, isEmpty);
+      final k = testKlasse('lehrperson-schule');
+      expect(k.name, 'Testklasse');
+      expect(k.schueler, hasLength(3));
+      expect(k.id, 'lehrperson-schule-testklasse');
+    });
+  });
 }

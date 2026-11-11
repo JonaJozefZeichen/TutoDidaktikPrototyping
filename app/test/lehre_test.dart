@@ -56,6 +56,48 @@ void main() {
     expect(find.text('Tuto Didaktik-Tool'), findsOneWidget);
   });
 
+  testWidgets('Präsentations-Zugang: gefüllte Beispielklasse ohne Teststand-Hinweise, Zurücksetzen', (t) async {
+    final api = testApi();
+    await starteAls(t, api, 'lehrperson-praesentation');
+    expect(find.text('Julia Berger'), findsOneWidget);
+    expect(find.text('Testmodus'), findsNothing);
+    expect(find.byKey(const ValueKey('entwuerfe-zeigen')), findsNothing);
+    expect(find.textContaining('Testklasse'), findsNothing);
+    expect(find.text('5B'), findsOneWidget);
+    expect(find.textContaining('22 Personen'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('klasse-lehrperson-praesentation-5b')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('kompetenzen-kasten')), findsOneWidget);
+    expect(find.text('Amelie B.'), findsWidgets);
+    expect(find.textContaining('Testklasse'), findsNothing);
+    await seite(t, 'Pakete');
+    expect(find.text('Wiederholung vor der Schularbeit'), findsWidgets);
+    final pakete = (await api.lehrDaten()).pakete.length;
+    expect(pakete, greaterThanOrEqualTo(3));
+
+    // Ein Paket löschen und zurücksetzen: der Ausgangsstand ist wieder da.
+    final stand = api.person;
+    api.person = testPersonen.firstWhere((p) => p.id == praesentationPersonId);
+    final d = await api.lehrDaten();
+    d.pakete.removeLast();
+    await api.speichereLehrDaten(d);
+    api.person = stand;
+    await t.tap(find.byKey(const ValueKey('praesentation-zuruecksetzen')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('praesentation-zuruecksetzen-ja')));
+    await t.pumpAndSettle();
+    expect((await api.lehrDaten()).pakete.length, pakete);
+
+    // Die anderen Lehrpersonen sehen weiter die leere Testklasse.
+    await t.tap(find.text('Wechseln'));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('person-lehrperson-schule')));
+    await t.pumpAndSettle();
+    expect(find.text('Testklasse'), findsWidgets);
+    expect(find.text('Testmodus'), findsOneWidget);
+    expect((await api.lehrDaten()).pakete, isEmpty);
+  });
+
   testWidgets('Katalog: filtern, zählen, merken, ins Paket', (t) async {
     await starteAls(t, testApi(), 'lehrperson-schule');
     await seite(t, 'Katalog');

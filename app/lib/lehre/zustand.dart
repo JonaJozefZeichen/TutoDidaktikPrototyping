@@ -43,6 +43,9 @@ class LehreZustand extends ChangeNotifier {
       daten = d;
       levelTitel = {for (final l in s.levels) l['id'] as String: '${l['titel'] ?? ''}'};
       fehler = null;
+      if (praesentation && d.pakete.isEmpty && d.versuche.isEmpty && a.isNotEmpty) {
+        fehler = await praesentationFuellen();
+      }
     } on ApiFehler catch (e) {
       fehler = e.text;
     }
@@ -66,8 +69,40 @@ class LehreZustand extends ChangeNotifier {
   /// Nur die Testklasse; weitere Klassen legen später Lehrpersonen oder das
   /// Tuto-Team an.
   List<TestKlasse> get klassen => [
-    testKlasse(person.id, versuche: daten.versuche, itemKompetenz: itemKompetenz, jetzt: uhr()),
+    praesentation
+        ? testKlasse(
+            person.id,
+            versuche: daten.versuche,
+            itemKompetenz: itemKompetenz,
+            jetzt: uhr(),
+            kuerzel: praesentationKlassenKuerzel,
+            name: praesentationKlassenName,
+            konten: praesentationKonten,
+          )
+        : testKlasse(person.id, versuche: daten.versuche, itemKompetenz: itemKompetenz, jetzt: uhr()),
   ];
+
+  /// Präsentations-Zugang: Beispielklasse mit gefüllten Daten, ohne die
+  /// Hinweise des Teststands.
+  bool get praesentation => person.id == praesentationPersonId;
+
+  /// Wort für die Klasse in Texten: "Testklasse" bzw. der Name der Beispielklasse.
+  String get klassenWort => praesentation ? 'Klasse $praesentationKlassenName' : 'Testklasse';
+
+  /// Ersetzt die Ablage des Präsentations-Zugangs durch frische Beispieldaten.
+  Future<String?> praesentationFuellen() async {
+    final neu = praesentationsDaten(person.id, aufgaben, uhr(), levelTitel: levelTitel);
+    try {
+      // Auf dem Stand des Servers aufsetzen, falls ein anderes Fenster inzwischen gespeichert hat.
+      neu.version = (await api.lehrDaten()).version;
+      daten = await api.speichereLehrDaten(neu);
+      offenesPaket = null;
+      notifyListeners();
+      return null;
+    } on ApiFehler catch (e) {
+      return e.text;
+    }
+  }
 
   /// Speichert die Antworten eines Testkontos aus der Schüler*innen-Ansicht.
   Future<String?> speichereVersuche(List<SchuelerVersuch> neu) => aendere((d) => d.versuche.addAll(neu));

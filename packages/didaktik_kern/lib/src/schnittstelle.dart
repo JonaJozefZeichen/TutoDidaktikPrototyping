@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:didaktik_kern/src/bestand.dart';
 import 'package:didaktik_kern/src/lehre/lehrbereich.dart';
+import 'package:didaktik_kern/src/lehre/praesentation.dart';
 import 'package:didaktik_kern/src/modelle.dart';
 import 'package:didaktik_kern/src/pruefung.dart';
 
@@ -17,6 +18,7 @@ const testPersonen = [
   Person(id: 'admin', name: 'Test-Admin', admin: true),
   Person(id: 'lehrperson-schule', name: 'Test-Lehrperson Schule', lehrperson: true),
   Person(id: 'lehrperson-nachhilfe', name: 'Test-Nachhilfe Mindlink', lehrperson: true),
+  Person(id: praesentationPersonId, name: 'Präsentation mit Beispielklasse', lehrperson: true),
 ];
 
 /// Listen für Dropdowns und Prüfung.

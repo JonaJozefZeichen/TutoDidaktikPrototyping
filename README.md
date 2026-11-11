@@ -41,6 +41,8 @@ Baut die Web-App bei Bedarf, startet den Server und öffnet http://127.0.0.1:878
 
 **Bereich für Lehrende testen:** beim Start "Test-Lehrperson Schule" oder "Test-Nachhilfe Mindlink" wählen. Lehrpersonen sehen später nur freigegebene Aufgaben; im Teststand zeigt der Schalter "Entwürfe zeigen" auch Entwürfe, sonst wäre der Store leer. Merkliste und Pakete speichert der Server nach `server/data/lehrbereich.json` (`--reset` sichert auch diese Datei).
 
+**Präsentations-Zugang:** Die Testperson "Präsentation mit Beispielklasse" zeigt den Bereich für Lehrende mit einer gefüllten Klasse 5B (22 erfundene Schüler\*innen, vier Pakete, Antworten und Abgaben) und ohne die Hinweise des Teststands, z. B. für Screenshots. Die Beispieldaten entstehen beim ersten Öffnen aus dem geladenen Aufgabenbestand (`praesentation.dart`); das Kreis-Symbol oben rechts setzt sie zurück.
+
 **Tastenkürzel im Editor:** Cmd/Strg + S speichern, Cmd/Strg + Enter Approval, Strg + `.` und Strg + `,` nächste und vorherige Aufgabe.
 
 ## Aufbau

@@ -237,12 +237,8 @@ class AufgabenKarte extends StatelessWidget {
                   if (hatVarianten(a, zustand.varianten))
                     const Marke('Varianten', farbe: tutoBlau, grund: kachel, icon: Icons.copy_all),
                   if (a.hatMedien) const Marke('Grafik', icon: Icons.image_outlined),
-                  if (a.status != 'live')
-                    Marke(
-                      '${statusNamen[a.status] ?? a.status} (nur Test)',
-                      farbe: grauText,
-                      grund: kachel,
-                    ),
+                  if (a.status != 'live' && !zustand.praesentation)
+                    Marke('${statusNamen[a.status] ?? a.status} (nur Test)', farbe: grauText, grund: kachel),
                 ],
               ),
               if (zusatz != null) ...[const SizedBox(height: 6), zusatz!],

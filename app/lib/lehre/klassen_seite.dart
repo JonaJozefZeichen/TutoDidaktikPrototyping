@@ -13,16 +13,23 @@ import 'package:tuto_didaktik/vorschau/widgets/antwort_eingabe.dart';
 
 const _stufenFarben = [Color(0xFFB3261E), Color(0xFFC77700), Color(0xFF2A62C4), Color(0xFF1B6B32)];
 
-Widget _testHinweis() => const Padding(
-  padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+/// Hinweis über den Klassenseiten; im Präsentations-Zugang ohne den Verweis
+/// auf die Testkonten.
+Widget _testHinweis(LehreZustand z) => Padding(
+  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
   child: Align(
     alignment: Alignment.centerLeft,
-    child: LeiserHinweis(
-      'Testklasse · Förderinformation, kein Notenersatz',
-      erklaerung:
-          'Drei Testkonten, die du in der Schüler*innen-Ansicht selbst bedienst. '
-          'Alle Werte sind Förderinformation, kein Notenersatz.',
-    ),
+    child: z.praesentation
+        ? const LeiserHinweis(
+            'Förderinformation, kein Notenersatz',
+            erklaerung: 'Alle Werte sind Förderinformation, kein Notenersatz.',
+          )
+        : const LeiserHinweis(
+            'Testklasse · Förderinformation, kein Notenersatz',
+            erklaerung:
+                'Drei Testkonten, die du in der Schüler*innen-Ansicht selbst bedienst. '
+                'Alle Werte sind Förderinformation, kein Notenersatz.',
+          ),
   ),
 );
 
@@ -50,18 +57,20 @@ class KlassenSeite extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     return Column(
       children: [
-        _testHinweis(),
+        _testHinweis(zustand),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
               Text('Meine Klassen', style: text.titleLarge),
-              const SizedBox(height: 4),
-              Text(
-                'Vorerst gibt es nur die Testklasse. Weitere Klassen legst du später selbst an, oder das Tuto-Team '
-                'richtet sie mit der Schullizenz ein.',
-                style: text.bodySmall,
-              ),
+              if (!zustand.praesentation) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Vorerst gibt es nur die Testklasse. Weitere Klassen legst du später selbst an, oder das Tuto-Team '
+                  'richtet sie mit der Schullizenz ein.',
+                  style: text.bodySmall,
+                ),
+              ],
               const SizedBox(height: 12),
               Wrap(
                 spacing: 12,
@@ -351,7 +360,7 @@ class KlasseSeite extends StatelessWidget {
                 ],
               ),
             ),
-            _testHinweis(),
+            _testHinweis(zustand),
             SizedBox(
               height: 270,
               child: Padding(
@@ -633,7 +642,7 @@ class SchuelerinSeite extends StatelessWidget {
             ],
           ),
         ),
-        _testHinweis(),
+        _testHinweis(zustand),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.all(16),
@@ -804,7 +813,7 @@ class _PaketErgebnisSeiteState extends State<PaketErgebnisSeite> {
             ],
           ),
         ),
-        _testHinweis(),
+        _testHinweis(widget.zustand),
         Expanded(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,

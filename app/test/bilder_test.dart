@@ -41,6 +41,32 @@ void main() {
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/editor_hilfe.png'));
   });
 
+  testWidgets('Bilder Präsentation', skip: !bilderDa, (t) async {
+    LehreZustand.uhr = () => DateTime(2026, 11, 20, 10);
+    addTearDown(() => LehreZustand.uhr = DateTime.now);
+    await ladeSchriften();
+    t.view.physicalSize = const Size(1600, 1000);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(DidaktikApp(api: testApi()));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('person-lehrperson-praesentation')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/praesentation_klassen.png'));
+    await t.tap(find.byKey(const ValueKey('klasse-lehrperson-praesentation-5b')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/praesentation_klasse.png'));
+    await t.tap(find.text('Amelie B.').first);
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/praesentation_person.png'));
+    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Pakete')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/praesentation_pakete.png'));
+    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Merkliste')));
+    await t.pumpAndSettle();
+    await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/praesentation_merkliste.png'));
+  });
+
   testWidgets('Bilder Lehrende', skip: !bilderDa, (t) async {
     PaketEditor.zufall = () => Random(1);
     addTearDown(() => PaketEditor.zufall = Random.new);

@@ -158,7 +158,7 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
                   onPressed: () => Navigator.of(context).maybePop(),
                   icon: const Icon(Icons.arrow_back),
                 ),
-                Text('Schüler*innen-Ansicht · Testklasse', style: text.titleMedium),
+                Text('Schüler*innen-Ansicht · ${_klasse.name}', style: text.titleMedium),
               ],
             ),
           ),
@@ -213,7 +213,7 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
         const SizedBox(height: 12),
         Text(
           'So sehen Lernende Tuto am Handy. Zugewiesene Pakete kommen ins Postfach auf der Insel. '
-          'Was du hier löst, erscheint in der Testklasse als Antworten und Lernstand.',
+          'Was du hier löst, erscheint in der ${z.klassenWort} als Antworten und Lernstand.',
           style: text.bodySmall,
         ),
         const SizedBox(height: 8),
@@ -294,8 +294,8 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: Colors.white70, borderRadius: BorderRadius.circular(16)),
-                  child: const Text(
-                    'Test-Insel · Gamification aus',
+                  child: Text(
+                    z.praesentation ? 'Insel-Platzhalter' : 'Test-Insel · Gamification aus',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 11),
@@ -337,7 +337,7 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      'Noch keine Pakete. Weise im Lehrbereich ein Paket der Testklasse zu.',
+                      'Noch keine Pakete. Weise im Lehrbereich ein Paket der ${z.klassenWort} zu.',
                       style: tokens.body(size: 14),
                       textAlign: TextAlign.center,
                     ),

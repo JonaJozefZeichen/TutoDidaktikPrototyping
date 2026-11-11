@@ -94,7 +94,7 @@ class _KatalogSeiteState extends State<KatalogSeite> {
             return Column(
               children: [
                 _kopf(context, schmal, filter),
-                if (z.auchUnfreigegebene) _testHinweis(context),
+                if (z.auchUnfreigegebene && !z.praesentation) _testHinweis(context),
                 Expanded(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,7 +176,10 @@ class _KatalogSeiteState extends State<KatalogSeite> {
             'Es werden auch noch nicht freigegebene Aufgaben gezeigt. Lehrpersonen sehen später nur Live-Aufgaben.',
         aktion: TextButton(
           key: const ValueKey('nur-live'),
-          style: TextButton.styleFrom(foregroundColor: grauText, textStyle: const TextStyle(fontFamily: schrift, fontSize: 12)),
+          style: TextButton.styleFrom(
+            foregroundColor: grauText,
+            textStyle: const TextStyle(fontFamily: schrift, fontSize: 12),
+          ),
           onPressed: () => widget.zustand.setzeAuchUnfreigegebene(false),
           child: const Text('Nur Live zeigen'),
         ),

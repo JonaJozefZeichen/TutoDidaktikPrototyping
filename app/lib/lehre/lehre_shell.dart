@@ -112,6 +112,29 @@ class _LehreShellState extends State<LehreShell> {
     await _z.laden();
   }
 
+  /// Stellt die Beispieldaten des Präsentations-Zugangs wieder her.
+  Future<void> _praesentationZuruecksetzen() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Beispieldaten zurücksetzen?'),
+        content: const Text('Pakete, Merkliste, Antworten und Abgaben der Beispielklasse werden neu erzeugt.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Abbrechen')),
+          FilledButton(
+            key: const ValueKey('praesentation-zuruecksetzen-ja'),
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Zurücksetzen'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    _navigator.currentState?.popUntil((r) => r.isFirst);
+    final fehler = await _z.praesentationFuellen();
+    if (fehler != null && mounted) await zeigeMeldung(context, fehler, fehler: true);
+  }
+
   Widget _inhalt() {
     if (_z.laedt && _z.stamm == null) return const Center(child: CircularProgressIndicator());
     if (_z.fehler != null && _z.stamm == null) {
@@ -160,41 +183,55 @@ class _LehreShellState extends State<LehreShell> {
                 Text('Tuto für Lehrende', style: text.titleMedium),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: LeiserHinweis(
-                      widget.demo == null ? 'Testmodus' : 'Demo · Änderungen nur in diesem Browser',
-                      erklaerung: widget.demo == null
-                          ? 'Lokaler Teststand ohne echten Login'
-                          : 'Demo: Änderungen bleiben nur in diesem Browser',
-                    ),
-                  ),
+                  child: _z.praesentation
+                      ? const SizedBox()
+                      : Align(
+                          alignment: Alignment.centerLeft,
+                          child: LeiserHinweis(
+                            widget.demo == null ? 'Testmodus' : 'Demo · Änderungen nur in diesem Browser',
+                            erklaerung: widget.demo == null
+                                ? 'Lokaler Teststand ohne echten Login'
+                                : 'Demo: Änderungen bleiben nur in diesem Browser',
+                          ),
+                        ),
                 ),
-                if (widget.demo != null)
+                if (_z.praesentation)
+                  IconButton(
+                    key: const ValueKey('praesentation-zuruecksetzen'),
+                    tooltip: 'Beispieldaten der Klasse $praesentationKlassenName zurücksetzen',
+                    onPressed: _praesentationZuruecksetzen,
+                    icon: const Icon(Icons.restart_alt, size: 18, color: grauText),
+                  )
+                else if (widget.demo != null)
                   TextButton(
                     key: const ValueKey('demo-zuruecksetzen'),
                     onPressed: _zuruecksetzen,
                     child: const Text('Zurücksetzen'),
                   ),
-                ListenableBuilder(
-                  listenable: _z,
-                  builder: (_, _) => Tooltip(
-                    message: 'Nur im Teststand: Entwürfe im Katalog zeigen, solange wenig freigegeben ist',
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Entwürfe zeigen', style: text.bodySmall),
-                        Switch(
-                          key: const ValueKey('entwuerfe-zeigen'),
-                          value: _z.auchUnfreigegebene,
-                          onChanged: _z.setzeAuchUnfreigegebene,
-                        ),
-                      ],
+                if (!_z.praesentation)
+                  ListenableBuilder(
+                    listenable: _z,
+                    builder: (_, _) => Tooltip(
+                      message: 'Nur im Teststand: Entwürfe im Katalog zeigen, solange wenig freigegeben ist',
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Entwürfe zeigen', style: text.bodySmall),
+                          Switch(
+                            key: const ValueKey('entwuerfe-zeigen'),
+                            value: _z.auchUnfreigegebene,
+                            onChanged: _z.setzeAuchUnfreigegebene,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(width: 8),
-                PersonPill(name: widget.person.name, rolle: widget.person.rollenText, onWechseln: widget.onAbmelden),
+                PersonPill(
+                  name: _z.praesentation ? praesentationLehrperson : widget.person.name,
+                  rolle: widget.person.rollenText,
+                  onWechseln: widget.onAbmelden,
+                ),
               ],
             ),
           ),

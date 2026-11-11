@@ -51,22 +51,25 @@ class TestKlasse {
 /// Namen der Testkonten; "du" ist die Lehrperson selbst.
 const testKonten = {'du': 'Du (Testkonto)', 'b': 'Test-Konto B', 'c': 'Test-Konto C'};
 
-/// Die Testklasse von [personId], mit den Stufen und Aktivitäten aus
-/// [versuche].
+/// Die Klasse von [personId], mit den Stufen und Aktivitäten aus [versuche].
+/// Ohne weitere Angaben ist es die Testklasse mit den drei Testkonten.
 TestKlasse testKlasse(
   String personId, {
   List<SchuelerVersuch> versuche = const [],
   Map<String, String> itemKompetenz = const {},
   DateTime? jetzt,
+  String kuerzel = 'testklasse',
+  String name = 'Testklasse',
+  Map<String, String> konten = testKonten,
 }) {
-  final klasse = '$personId-testklasse';
+  final klasse = '$personId-$kuerzel';
   final seit = (jetzt ?? DateTime.now()).subtract(const Duration(days: 7));
   return TestKlasse(
     id: klasse,
-    name: 'Testklasse',
+    name: name,
     lernwelt: 5,
     schueler: [
-      for (final e in testKonten.entries)
+      for (final e in konten.entries)
         () {
           final id = '$personId-${e.key}';
           final eigene = [
