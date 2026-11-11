@@ -29,8 +29,7 @@ class _AnmeldenSeiteState extends State<AnmeldenSeite> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: linie),
-            borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(16),
           ),
           child: FutureBuilder<List<Person>>(
             future: _personen,

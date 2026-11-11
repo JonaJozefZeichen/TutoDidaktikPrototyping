@@ -78,7 +78,7 @@ void main() {
     expect(find.textContaining('Demo mit Beispielaufgaben'), findsOneWidget);
     await t.tap(find.textContaining('Test-Didaktik A'));
     await t.pumpAndSettle();
-    expect(find.text('Demo: Änderungen bleiben nur in diesem Browser'), findsOneWidget);
+    expect(find.text('Demo · Änderungen nur in diesem Browser'), findsOneWidget);
     expect(find.text('Zu prüfen (12)'), findsOneWidget);
     expect(find.byKey(const ValueKey('leitfaden-knopf')), findsOneWidget);
     await t.tap(find.byKey(const ValueKey('demo-zuruecksetzen')));

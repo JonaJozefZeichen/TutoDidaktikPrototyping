@@ -43,6 +43,12 @@ Future<void> ladeSchriften() async {
     await l.load();
   }
 
+  await lade('Inter', [
+    'assets/fonts/Inter-Regular.ttf',
+    'assets/fonts/Inter-Medium.ttf',
+    'assets/fonts/Inter-SemiBold.ttf',
+    'assets/fonts/Inter-Bold.ttf',
+  ]);
   await lade('Open Sans', ['assets/fonts/OpenSans-Variable.ttf']);
   await lade('IBM Plex Mono', ['assets/fonts/IBMPlexMono-Regular.ttf', 'assets/fonts/IBMPlexMono-SemiBold.ttf']);
   await lade('MaterialIcons', ['fonts/MaterialIcons-Regular.otf']);

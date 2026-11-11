@@ -100,7 +100,7 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
         isExpanded: true,
         initialValue: werte.contains(wert) ? wert : null,
         decoration: InputDecoration(labelText: label),
-        style: const TextStyle(fontSize: 13, color: tinte),
+        style: const TextStyle(fontFamily: schrift, fontSize: 13, color: tinte),
         items: [
           const DropdownMenuItem(value: null, child: Text('Alle')),
           for (final w in werte)
@@ -134,6 +134,29 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Aufgaben', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 14),
+          // Status als Zähler-Chips: ein Klick filtert, die Zahlen zeigen den Bestand.
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              ZaehlerChip(
+                key: const ValueKey('status-alle'),
+                label: 'Alle',
+                zahl: widget.zeilen.length,
+                aktiv: _status == null,
+                onTap: () => setState(() => _status = null),
+              ),
+              for (final st in statusNamen.keys)
+                ZaehlerChip(
+                  key: ValueKey('status-$st'),
+                  label: statusNamen[st]!,
+                  zahl: widget.zeilen.where((z) => z['status'] == st).length,
+                  aktiv: _status == st,
+                  onTap: () => setState(() => _status = _status == st ? null : st),
+                ),
+            ],
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -150,7 +173,6 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
                   onChanged: (v) => setState(() => _suche = v),
                 ),
               ),
-              _filter('Status', _status, _werte('status'), (v) => _status = v, name: (s) => statusNamen[s] ?? s),
               _filter(
                 'Lernwelt',
                 _lernwelt?.toString(),
@@ -178,11 +200,10 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
           ),
           const SizedBox(height: 8),
           Expanded(
+            // Tabelle flach auf weiß, nur Haarlinien zwischen den Zeilen.
             child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: linie),
-                borderRadius: BorderRadius.circular(6),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: linie)),
               ),
               child: Column(
                 children: [
@@ -267,7 +288,7 @@ class AufgabenKopfzeile extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: InkWell(
                   key: ValueKey('sortiere-${s.name}'),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(999),
                   onTap: onSortiere == null ? null : () => onSortiere!(s),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
@@ -340,7 +361,7 @@ class AufgabenZeile extends StatelessWidget {
                   Text('${zeile['titel'] ?? '(ohne Titel)'}', maxLines: 1, overflow: TextOverflow.ellipsis),
                   Text(
                     '${zeile['id']}',
-                    style: const TextStyle(fontFamily: monoSchrift, fontSize: 11, color: grauText),
+                    style: const TextStyle(fontFamily: schrift, fontFeatures: ziffern, fontSize: 11.5, color: tutoBlau),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],

@@ -151,13 +151,10 @@ class _LehreShellState extends State<LehreShell> {
     return Scaffold(
       body: Column(
         children: [
+          // Kopfzeile ohne Leiste, wie im Didaktik-Tool.
           Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: BorderSide(color: linie)),
-            ),
+            height: 56,
+            padding: const EdgeInsets.fromLTRB(20, 8, 12, 0),
             child: Row(
               children: [
                 Text('Tuto für Lehrende', style: text.titleMedium),
@@ -165,15 +162,11 @@ class _LehreShellState extends State<LehreShell> {
                 Expanded(
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: const Color(0xFFFFF4D6), borderRadius: BorderRadius.circular(4)),
-                      child: Text(
-                        widget.demo == null ? 'Testmodus' : 'Demo: Änderungen bleiben nur in diesem Browser',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: hinweisGelb),
-                      ),
+                    child: LeiserHinweis(
+                      widget.demo == null ? 'Testmodus' : 'Demo · Änderungen nur in diesem Browser',
+                      erklaerung: widget.demo == null
+                          ? 'Lokaler Teststand ohne echten Login'
+                          : 'Demo: Änderungen bleiben nur in diesem Browser',
                     ),
                   ),
                 ),
@@ -201,28 +194,40 @@ class _LehreShellState extends State<LehreShell> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text('${widget.person.name} (${widget.person.rollenText})', style: text.bodySmall),
-                const SizedBox(width: 4),
-                TextButton(onPressed: widget.onAbmelden, child: const Text('Wechseln')),
+                PersonPill(name: widget.person.name, rolle: widget.person.rollenText, onWechseln: widget.onAbmelden),
               ],
             ),
           ),
           Expanded(
             child: Row(
               children: [
-                NavigationRail(
-                  selectedIndex: _seite,
-                  labelType: NavigationRailLabelType.all,
-                  backgroundColor: Colors.white,
-                  onDestinationSelected: _wechsle,
-                  destinations: const [
-                    NavigationRailDestination(icon: Icon(Icons.groups_outlined), label: Text('Klassen')),
-                    NavigationRailDestination(icon: Icon(Icons.menu_book_outlined), label: Text('Katalog')),
-                    NavigationRailDestination(icon: Icon(Icons.favorite_border), label: Text('Merkliste')),
-                    NavigationRailDestination(icon: Icon(Icons.post_add), label: Text('Pakete erstellen')),
-                  ],
+                // Navigation flach links, gleich breit wie im Didaktik-Tool.
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      // Nur so hoch wie die Einträge.
+                      child: SizedBox(
+                        height: 8 + 4 * 68.0,
+                        child: NavigationRail(
+                          selectedIndex: _seite,
+                          labelType: NavigationRailLabelType.all,
+                          minWidth: 72,
+                          groupAlignment: -1,
+                          onDestinationSelected: _wechsle,
+                          destinations: const [
+                            NavigationRailDestination(icon: Icon(Icons.groups_outlined), label: Text('Klassen')),
+                            NavigationRailDestination(icon: Icon(Icons.menu_book_outlined), label: Text('Katalog')),
+                            NavigationRailDestination(icon: Icon(Icons.favorite_border), label: Text('Merkliste')),
+                            NavigationRailDestination(icon: Icon(Icons.post_add), label: Text('Pakete')),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                const VerticalDivider(width: 1, color: linie),
                 Expanded(
                   child: Navigator(
                     key: _navigator,

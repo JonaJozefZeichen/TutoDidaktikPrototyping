@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tuto_didaktik/thema.dart';
 import 'package:tuto_didaktik/vorschau/design_system_controller.dart';
+import 'package:tuto_didaktik/vorschau/iphone_rahmen.dart';
 import 'package:tuto_didaktik/vorschau/widgets/antwort_eingabe.dart';
 import 'package:tuto_didaktik/vorschau/widgets/medien.dart';
 
@@ -60,19 +61,9 @@ class _HandyVorschauState extends State<HandyVorschau> {
     final index = _item.clamp(0, items.isEmpty ? 0 : items.length - 1);
     final item = items.isEmpty ? null : items[index];
     final werte = <String, num>{for (final p in aufgabe?.parameter ?? const <Parameter>[]) p.name: p.min};
-    final handy = Container(
-      width: 390,
-      height: 720,
-      decoration: BoxDecoration(
-        color: tinte,
-        borderRadius: BorderRadius.circular(38),
-        boxShadow: const [BoxShadow(blurRadius: 18, color: Color(0x22000000), offset: Offset(0, 6))],
-      ),
-      padding: const EdgeInsets.all(9),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: item == null ? _nichtLadbar(fehler) : _bildschirm(context, aufgabe!, item, werte),
-      ),
+    final handy = IPhoneRahmen(
+      hintergrund: item == null ? null : context.designSystem.backgroundGradient,
+      child: item == null ? _nichtLadbar(fehler) : _bildschirm(context, aufgabe!, item, werte),
     );
     final leiste = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -97,13 +88,13 @@ class _HandyVorschauState extends State<HandyVorschau> {
     return LayoutBuilder(
       builder: (context, c) {
         const leisteBreite = 250.0;
-        final hoehe = c.maxHeight.isFinite ? c.maxHeight : 720.0;
-        final skala = (hoehe / 720).clamp(0.55, 1.0);
-        final handyBreite = 390 * skala;
+        final hoehe = c.maxHeight.isFinite ? c.maxHeight : iphoneHoehe;
+        final skala = (hoehe / iphoneHoehe).clamp(0.5, 1.0);
+        final handyBreite = iphoneBreite * skala;
         final nebeneinander = !c.maxWidth.isFinite || c.maxWidth >= handyBreite + 16 + leisteBreite;
         final skaliert = SizedBox(
           width: handyBreite,
-          height: 720 * skala,
+          height: iphoneHoehe * skala,
           child: FittedBox(child: handy),
         );
         if (nebeneinander) {
@@ -122,13 +113,13 @@ class _HandyVorschauState extends State<HandyVorschau> {
           );
         }
         final begrenzt = c.maxHeight.isFinite;
-        final klein = (begrenzt ? (hoehe - 230) / 720 : 1.0).clamp(0.4, 1.0);
+        final klein = (begrenzt ? (hoehe - 230) / iphoneHoehe : 1.0).clamp(0.4, 1.0);
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 390 * klein,
-              height: 720 * klein,
+              width: iphoneBreite * klein,
+              height: iphoneHoehe * klein,
               child: FittedBox(child: handy),
             ),
             const SizedBox(height: 8),
@@ -168,13 +159,13 @@ class _HandyVorschauState extends State<HandyVorschau> {
     final tokens = context.designSystem;
     String text(String t) => fuelleParameter(t, werte);
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(size: const Size(372, 702), padding: EdgeInsets.zero),
+      data: MediaQuery.of(context).copyWith(size: iphoneInhalt, padding: EdgeInsets.zero),
       child: DecoratedBox(
-        decoration: BoxDecoration(gradient: tokens.backgroundGradient),
+        decoration: const BoxDecoration(),
         child: Material(
           type: MaterialType.transparency,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 26, 18, 26),
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 26),
             children: [
               Text(aufgabe.titel, style: tokens.label()),
               const SizedBox(height: 12),

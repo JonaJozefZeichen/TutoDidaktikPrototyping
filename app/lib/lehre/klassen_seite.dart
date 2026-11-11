@@ -13,14 +13,16 @@ import 'package:tuto_didaktik/vorschau/widgets/antwort_eingabe.dart';
 
 const _stufenFarben = [Color(0xFFB3261E), Color(0xFFC77700), Color(0xFF2A62C4), Color(0xFF1B6B32)];
 
-Widget _testHinweis() => Container(
-  width: double.infinity,
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-  color: const Color(0xFFFFF4D6),
-  child: const Text(
-    'Testklasse: drei Testkonten, die du in der Schüler*innen-Ansicht selbst bedienst. '
-    'Alle Werte sind Förderinformation, kein Notenersatz.',
-    style: TextStyle(fontSize: 12, color: hinweisGelb, fontWeight: FontWeight.w600),
+Widget _testHinweis() => const Padding(
+  padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+  child: Align(
+    alignment: Alignment.centerLeft,
+    child: LeiserHinweis(
+      'Testklasse · Förderinformation, kein Notenersatz',
+      erklaerung:
+          'Drei Testkonten, die du in der Schüler*innen-Ansicht selbst bedienst. '
+          'Alle Werte sind Förderinformation, kein Notenersatz.',
+    ),
   ),
 );
 
@@ -71,12 +73,12 @@ class KlassenSeite extends StatelessWidget {
                       child: Material(
                         color: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(16),
                           side: const BorderSide(color: linie),
                         ),
                         child: InkWell(
                           key: ValueKey('klasse-${k.id}'),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(16),
                           onTap: () => onKlasse(k),
                           child: Padding(
                             padding: const EdgeInsets.all(14),
@@ -150,7 +152,7 @@ class _Kasten extends StatelessWidget {
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: linie),
       ),
       child: Padding(
@@ -457,7 +459,7 @@ class KlasseSeite extends StatelessWidget {
                 child: Material(
                   color: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                     side: const BorderSide(color: linie),
                   ),
                   child: Table(
@@ -851,12 +853,12 @@ class _PaketErgebnisSeiteState extends State<PaketErgebnisSeite> {
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: i == _auswahl ? tutoBlau : linie, width: i == _auswahl ? 2 : 1),
       ),
       child: InkWell(
         key: ValueKey('antwort-$i'),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         onTap: () => setState(() => _auswahl = i),
         child: Padding(
           padding: const EdgeInsets.all(12),

@@ -98,7 +98,7 @@ void main() {
     await expectLater(find.byType(DidaktikApp), matchesGoldenFile('bilder/lehre_detail.png'));
     await t.pump(const Duration(seconds: 6)); // Meldung ausblenden lassen
     await t.pumpAndSettle();
-    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Pakete erstellen')));
+    await t.tap(find.descendant(of: find.byType(NavigationRail), matching: find.text('Pakete')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('paket-erstellen')));
     await t.pumpAndSettle();

@@ -322,7 +322,10 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                           child: ActionChip(
                             key: const ValueKey('paket-code'),
                             avatar: const Icon(Icons.share_outlined, size: 16),
-                            label: Text(code, style: const TextStyle(fontFamily: monoSchrift)),
+                            label: Text(
+                              code,
+                              style: const TextStyle(fontFamily: schrift, fontFeatures: ziffern),
+                            ),
                             onPressed: () async {
                               await Clipboard.setData(ClipboardData(text: code));
                               if (context.mounted) await zeigeMeldung(context, 'Code $code kopiert');
@@ -334,13 +337,9 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       TextButton.icon(
                         key: const ValueKey('als-warenkorb'),
                         onPressed: () => setState(() => z.offenesPaket = z.offenesPaket == _p.id ? null : _p.id),
-                        style: z.offenesPaket == _p.id
-                            ? TextButton.styleFrom(backgroundColor: const Color(0xFFE4ECFA))
-                            : null,
+                        style: z.offenesPaket == _p.id ? TextButton.styleFrom(backgroundColor: kachel) : null,
                         icon: Icon(z.offenesPaket == _p.id ? Icons.link : Icons.add_shopping_cart, size: 18),
-                        label: Text(
-                          z.offenesPaket == _p.id ? 'Katalog verbunden' : 'Katalog verbinden',
-                        ),
+                        label: Text(z.offenesPaket == _p.id ? 'Katalog verbunden' : 'Katalog verbinden'),
                       ),
                       const SizedBox(width: 4),
                       OutlinedButton.icon(
@@ -387,7 +386,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       width: double.infinity,
                       margin: const EdgeInsets.only(top: 6),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: const Color(0xFFE4ECFA), borderRadius: BorderRadius.circular(6)),
+                      decoration: BoxDecoration(color: kachel, borderRadius: BorderRadius.circular(14)),
                       child: const Text(
                         'Mit dem Katalog verbunden: „+ Ins Paket“ im Katalog und in der Merkliste legt Aufgaben in dieses Paket.',
                         style: TextStyle(color: tutoBlau, fontWeight: FontWeight.w600),
@@ -399,7 +398,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                       width: double.infinity,
                       margin: const EdgeInsets.only(top: 6),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: const Color(0xFFE4ECFA), borderRadius: BorderRadius.circular(6)),
+                      decoration: BoxDecoration(color: kachel, borderRadius: BorderRadius.circular(14)),
                       child: Text(
                         'Förderpaket „${f.kompetenz}“ für ${f.schueler.length} '
                         '${f.schueler.length == 1 ? 'Person' : 'Personen'} der '
@@ -752,11 +751,11 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
       child: Material(
         color: p.gesperrt ? const Color(0xFFEFF4FD) : Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: gewaehlt ? tutoBlau : linie, width: gewaehlt ? 2 : 1),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           onTap: () => setState(() => _auswahl = ('A', i)),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -773,7 +772,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
                   width: 24,
                   child: Text(
                     '${i + 1}',
-                    style: const TextStyle(fontFamily: monoSchrift, fontWeight: FontWeight.w700),
+                    style: const TextStyle(fontFamily: schrift, fontFeatures: ziffern, fontWeight: FontWeight.w700),
                   ),
                 ),
                 IconButton(
@@ -915,7 +914,7 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: const Color(0xFFFFF4D6), borderRadius: BorderRadius.circular(6)),
+            decoration: BoxDecoration(color: const Color(0xFFFFF1CC), borderRadius: BorderRadius.circular(14)),
             child: Text(
               [
                 if (ersatz > 0)
@@ -984,8 +983,8 @@ class _PaketEditorState extends State<PaketEditor> with SingleTickerProviderStat
     final gewaehlt = _auswahl == (gruppe, i);
     final (farbe, grund) = switch (art) {
       GruppenArt.original => (grauText, const Color(0xFFEDEFF3)),
-      GruppenArt.variante || GruppenArt.parameter => (tutoBlau, const Color(0xFFE4ECFA)),
-      GruppenArt.ersatz || GruppenArt.ersatzTyp => (hinweisGelb, const Color(0xFFFFF4D6)),
+      GruppenArt.variante || GruppenArt.parameter => (tutoBlau, kachel),
+      GruppenArt.ersatz || GruppenArt.ersatzTyp => (hinweisGelb, const Color(0xFFFFF1CC)),
       GruppenArt.fehlt => (fehlerRot, const Color(0xFFFBE6E4)),
     };
     return InkWell(

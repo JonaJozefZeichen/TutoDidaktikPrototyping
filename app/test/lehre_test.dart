@@ -99,7 +99,7 @@ void main() {
 
   testWidgets('Generator: generieren, sperren, neu würfeln, Gruppen, zuweisen', (t) async {
     await starteAls(t, testApi(), 'lehrperson-nachhilfe');
-    await seite(t, 'Pakete erstellen');
+    await seite(t, 'Pakete');
     await t.tap(find.byKey(const ValueKey('paket-erstellen')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Generiertes Paket');
@@ -176,7 +176,7 @@ void main() {
 
   testWidgets('Paket-Code: eine andere Lehrperson holt eine Kopie', (t) async {
     await starteAls(t, testApi(), 'lehrperson-schule');
-    await seite(t, 'Pakete erstellen');
+    await seite(t, 'Pakete');
     await t.tap(find.byKey(const ValueKey('paket-erstellen')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Generiertes Paket');
@@ -193,7 +193,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('person-lehrperson-nachhilfe')));
     await t.pumpAndSettle();
-    await seite(t, 'Pakete erstellen');
+    await seite(t, 'Pakete');
     await t.tap(find.byKey(const ValueKey('paket-per-code')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const ValueKey('text-dialog-feld')), code.toLowerCase());
@@ -212,7 +212,7 @@ void main() {
     expect(find.text('Testklasse'), findsOneWidget);
     expect(mitSchluessel('klasse-'), findsNWidgets(1));
 
-    await seite(t, 'Pakete erstellen');
+    await seite(t, 'Pakete');
     await t.tap(find.byKey(const ValueKey('paket-erstellen')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Generiertes Paket');
@@ -290,7 +290,7 @@ void main() {
 
   testWidgets('Paket erstellen: Name und Weg wählen, Generator per Menü, Speichern, Filter', (t) async {
     await starteAls(t, testApi(), 'lehrperson-schule');
-    await seite(t, 'Pakete erstellen');
+    await seite(t, 'Pakete');
     await t.tap(find.byKey(const ValueKey('paket-erstellen')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Bruchrechnen');
@@ -325,7 +325,7 @@ void main() {
     t,
   ) async {
     await starteAls(t, testApi(), 'lehrperson-schule');
-    await seite(t, 'Pakete erstellen');
+    await seite(t, 'Pakete');
     await t.tap(find.byKey(const ValueKey('paket-erstellen')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const ValueKey('neues-paket-name')), 'Offen');

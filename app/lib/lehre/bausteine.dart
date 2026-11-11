@@ -16,7 +16,7 @@ class Marke extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-    decoration: BoxDecoration(color: grund, borderRadius: BorderRadius.circular(4)),
+    decoration: BoxDecoration(color: grund, borderRadius: BorderRadius.circular(999)),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -185,12 +185,12 @@ class AufgabenKarte extends StatelessWidget {
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: linie),
       ),
       child: InkWell(
         key: ValueKey('karte-${a.id}'),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         onTap: onOeffnen,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 4, 8),
@@ -235,13 +235,13 @@ class AufgabenKarte extends StatelessWidget {
                   if (a.kontext != null && a.kontext != 'innermathematisch')
                     Marke(kontextNamen[a.kontext] ?? a.kontext!),
                   if (hatVarianten(a, zustand.varianten))
-                    const Marke('Varianten', farbe: tutoBlau, grund: Color(0xFFE4ECFA), icon: Icons.copy_all),
+                    const Marke('Varianten', farbe: tutoBlau, grund: kachel, icon: Icons.copy_all),
                   if (a.hatMedien) const Marke('Grafik', icon: Icons.image_outlined),
                   if (a.status != 'live')
                     Marke(
                       '${statusNamen[a.status] ?? a.status} (nur Test)',
-                      farbe: hinweisGelb,
-                      grund: const Color(0xFFFFF4D6),
+                      farbe: grauText,
+                      grund: kachel,
                     ),
                 ],
               ),
@@ -461,7 +461,14 @@ class _FilterSpalteState extends State<FilterSpalte> {
                       widget.onChanged();
                     },
                   ),
-                  Expanded(child: Text(_name(fac, w), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                  Expanded(
+                    child: Text(
+                      _name(fac, w),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13, color: tinte),
+                    ),
+                  ),
                   Text('${zahlen[w] ?? 0}', style: Theme.of(context).textTheme.bodySmall),
                 ],
               ),
@@ -498,10 +505,10 @@ class _FilterSpalteState extends State<FilterSpalte> {
                   Expanded(
                     child: Text(
                       titel,
-                      style: TextStyle(fontWeight: FontWeight.w700, color: aktiv ? tutoBlau : tinte),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: aktiv ? tutoBlau : tinte),
                     ),
                   ),
-                  Icon(offen ? Icons.expand_less : Icons.expand_more, size: 20, color: grauText),
+                  Icon(offen ? Icons.expand_less : Icons.expand_more, size: 18, color: const Color(0xFFB0B0B8)),
                 ],
               ),
             ),

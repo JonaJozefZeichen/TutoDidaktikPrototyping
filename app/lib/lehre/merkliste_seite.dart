@@ -293,7 +293,7 @@ Future<Paket?> neuesPaketDialog(
               Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                   side: const BorderSide(color: linie),
                 ),
                 child: ListTile(
@@ -392,7 +392,7 @@ class _PaketeSeiteState extends State<PaketeSeite> {
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text('Aufgabenpakete', style: text.titleLarge),
+                Text('Pakete', style: text.titleLarge),
                 const SizedBox(width: 8),
                 FilledButton.icon(
                   key: const ValueKey('paket-erstellen'),
@@ -449,7 +449,7 @@ class _PaketeSeiteState extends State<PaketeSeite> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: verbunden ? tutoBlau : linie, width: verbunden ? 2 : 1),
       ),
       child: ListTile(

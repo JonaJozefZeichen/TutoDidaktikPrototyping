@@ -390,7 +390,7 @@ class _ZuweisenSeiteState extends State<ZuweisenSeite> {
           Container(
             key: const ValueKey('zuweisen-warnung'),
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: const Color(0xFFFFF4D6), borderRadius: BorderRadius.circular(6)),
+            decoration: BoxDecoration(color: const Color(0xFFFFF1CC), borderRadius: BorderRadius.circular(14)),
             child: Text(
               '${schon.length} ${schon.length == 1 ? 'Person hat' : 'Personen haben'} genau diese Aufgaben schon bekommen: '
               '${schon.map((s) => namen[s] ?? s).join(', ')}. Trotzdem senden?',
@@ -504,7 +504,7 @@ class _ZuweisungSeiteState extends State<ZuweisungSeite> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          color: const Color(0xFFFFF4D6),
+          color: const Color(0xFFFFF1CC),
           child: Text(
             'Verschickt am ${datumText(zuweisung.am)} · '
             '${zuweisung.abgabe == null ? 'ohne Abgabedatum' : 'Abgabe bis ${datumText(zuweisung.abgabe!)}'} · '
@@ -520,7 +520,7 @@ class _ZuweisungSeiteState extends State<ZuweisungSeite> {
                 Card(
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                     side: const BorderSide(color: linie),
                   ),
                   child: ListTile(
@@ -543,7 +543,7 @@ class _ZuweisungSeiteState extends State<ZuweisungSeite> {
       return Marke(
         x.zuSpaet ? 'fertig am ${datumText(x.am!)}, zu spät' : 'fertig am ${datumText(x.am!)}',
         farbe: x.zuSpaet ? hinweisGelb : const Color(0xFF1B6B32),
-        grund: x.zuSpaet ? const Color(0xFFFFF4D6) : const Color(0xFFE2F3E6),
+        grund: x.zuSpaet ? const Color(0xFFFFF1CC) : const Color(0xFFE2F3E6),
       );
     }
     return x.zuSpaet
