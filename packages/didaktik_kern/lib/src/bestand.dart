@@ -232,6 +232,35 @@ class Bestand {
     return e;
   }
 
+  /// Nimmt das eigene Approval auf [fassung] zurück, solange die Fassung
+  /// noch nicht durch zwei Approvals live ist. Ohne verbleibendes Approval
+  /// wird `geprueft` wieder `entwurf`; eine Live-Aufgabe mit Korrektur bleibt live.
+  Eintrag approvalZuruecknehmen(String id, int fassung, Person person) {
+    if (!person.darfFreigeben) {
+      throw const RegelFehler('keine_rechte', 'Nur das Didaktik-Team gibt Approvals', status: 403);
+    }
+    final e = eintrag(id);
+    if (fassung != e.aktuell.nr) {
+      throw const RegelFehler(
+        'konflikt',
+        'Die Aufgabe wurde inzwischen geändert. Bitte die aktuelle Fassung ansehen.',
+        status: 409,
+      );
+    }
+    final f = e.aktuell;
+    if (e.liveFassung == f.nr) {
+      throw const RegelFehler('schon_live', 'Diese Fassung ist schon live; zurücknehmen geht nicht mehr');
+    }
+    final eigenes = f.approvals.where((a) => a.person == person.id).firstOrNull;
+    if (eigenes == null) {
+      throw const RegelFehler('kein_approval', 'Auf dieser Fassung gibt es kein Approval von dir');
+    }
+    f.approvals.remove(eigenes);
+    e.ereignisse.add(Ereignis(art: 'approval_zurueck', person: person.id, am: _uhr(), fassung: f.nr));
+    if (e.status == 'geprueft' && f.approvals.isEmpty) e.status = 'entwurf';
+    return e;
+  }
+
   /// Nimmt eine Live-Aufgabe sofort aus der App. Eine einzelne Person darf das.
   Eintrag zurueckziehen(String id, Person person, {String? grund}) {
     if (!person.darfZurueckziehen) {

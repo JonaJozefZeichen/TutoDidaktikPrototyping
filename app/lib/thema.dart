@@ -34,6 +34,26 @@ ThemeData baueThema() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
     ),
+    // Dialoge wie der Rest der Oberfläche: weiß, flach, kleiner Radius, ohne
+    // die Material-3-Tönung aus dem Farbschema.
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: linie),
+      ),
+      titleTextStyle: const TextStyle(fontFamily: 'Open Sans', fontSize: 18, fontWeight: FontWeight.w700, color: tinte),
+      contentTextStyle: const TextStyle(fontFamily: 'Open Sans', fontSize: 13.5, color: tinte, height: 1.4),
+    ),
+    cardTheme: const CardThemeData(color: Colors.white, surfaceTintColor: Colors.transparent),
+    // Meldungen schweben unten mittig und verdecken keine Leisten.
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      width: 420,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+    ),
     textTheme: const TextTheme(
       titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: tinte),
       titleMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: tinte),

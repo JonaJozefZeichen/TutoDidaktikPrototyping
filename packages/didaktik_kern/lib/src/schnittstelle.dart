@@ -130,6 +130,7 @@ class Schnittstelle {
             trotzdem: k['trotzdem'] == true,
           ),
           'approval' => bestand.approval(id, _pflicht<int>(k, 'fassung'), p),
+          'approval-zuruecknehmen' => bestand.approvalZuruecknehmen(id, _pflicht<int>(k, 'fassung'), p),
           'zurueckziehen' => bestand.zurueckziehen(id, p, grund: k['grund'] as String?),
           'wiederaufnehmen' => bestand.wiederaufnehmen(id, p),
           'wiederherstellen' => bestand.wiederherstellen(id, _pflicht<int>(k, 'nr'), p),

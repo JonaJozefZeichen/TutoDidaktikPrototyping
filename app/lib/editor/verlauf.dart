@@ -10,6 +10,7 @@ const _artNamen = {
   'wiederherstellung': 'Frühere Fassung wiederhergestellt',
   'wiederaufnahme': 'Wieder aufgenommen',
   'approval': 'Approval gegeben',
+  'approval_zurueck': 'Approval zurückgenommen',
   'live': 'Live geschaltet',
   'zurueckgezogen': 'Zurückgezogen',
 };
