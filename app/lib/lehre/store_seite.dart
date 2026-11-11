@@ -99,15 +99,7 @@ class _KatalogSeiteState extends State<KatalogSeite> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (!schmal)
-                        Container(
-                          width: 290,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            border: Border(right: BorderSide(color: linie)),
-                          ),
-                          child: filter,
-                        ),
+                      if (!schmal) SizedBox(width: 270, child: filter),
                       Expanded(child: _treffer(context, treffer, imPaket)),
                     ],
                   ),
@@ -174,26 +166,21 @@ class _KatalogSeiteState extends State<KatalogSeite> {
     ),
   );
 
-  Widget _testHinweis(BuildContext context) => Container(
-    width: double.infinity,
-    color: const Color(0xFFFFF1CC),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-    child: Row(
-      children: [
-        const Icon(Icons.science_outlined, size: 16, color: hinweisGelb),
-        const SizedBox(width: 6),
-        const Expanded(
-          child: Text(
-            'Teststand: Es werden auch noch nicht freigegebene Aufgaben gezeigt. Lehrpersonen sehen später nur Live-Aufgaben.',
-            style: TextStyle(fontSize: 12, color: hinweisGelb, fontWeight: FontWeight.w600),
-          ),
-        ),
-        TextButton(
+  Widget _testHinweis(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: LeiserHinweis(
+        'Teststand: Entwürfe sichtbar',
+        erklaerung:
+            'Es werden auch noch nicht freigegebene Aufgaben gezeigt. Lehrpersonen sehen später nur Live-Aufgaben.',
+        aktion: TextButton(
           key: const ValueKey('nur-live'),
+          style: TextButton.styleFrom(foregroundColor: grauText, textStyle: const TextStyle(fontFamily: schrift, fontSize: 12)),
           onPressed: () => widget.zustand.setzeAuchUnfreigegebene(false),
           child: const Text('Nur Live zeigen'),
         ),
-      ],
+      ),
     ),
   );
 

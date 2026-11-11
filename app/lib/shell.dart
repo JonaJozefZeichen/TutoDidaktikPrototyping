@@ -152,15 +152,11 @@ class _ShellState extends State<Shell> {
                   Expanded(
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: const ShapeDecoration(color: Color(0xFFFFF1CC), shape: StadiumBorder()),
-                        child: Text(
-                          widget.demo == null ? 'Testmodus' : 'Demo: Änderungen bleiben nur in diesem Browser',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: hinweisGelb),
-                        ),
+                      child: LeiserHinweis(
+                        widget.demo == null ? 'Testmodus' : 'Demo · Änderungen nur in diesem Browser',
+                        erklaerung: widget.demo == null
+                            ? 'Lokaler Teststand ohne echten Login'
+                            : 'Demo: Änderungen bleiben nur in diesem Browser',
                       ),
                     ),
                   ),

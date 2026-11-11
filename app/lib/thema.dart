@@ -132,6 +132,8 @@ ThemeData baueThema() {
       secondaryLabelStyle: const TextStyle(fontFamily: schrift, fontSize: 12.5, color: Colors.white),
     ),
     checkboxTheme: CheckboxThemeData(
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       side: const BorderSide(color: Color(0xFFBDBDC4), width: 1.5),
     ),
@@ -273,6 +275,52 @@ class SchwebePill extends StatelessWidget {
     decoration: karte(radius: radius, schwebend: true),
     child: child,
   );
+}
+
+/// Leiser Hinweis: graue Pill mit gelbem Punkt statt gelbem Balken. Der volle
+/// Text steht im Tooltip, [aktion] ist optional ein leiser Link daneben.
+class LeiserHinweis extends StatelessWidget {
+  const LeiserHinweis(this.text, {super.key, this.erklaerung, this.aktion});
+
+  final String text;
+  final String? erklaerung;
+  final Widget? aktion;
+
+  @override
+  Widget build(BuildContext context) {
+    final pill = Container(
+      padding: const EdgeInsets.fromLTRB(9, 4, 11, 4),
+      decoration: const ShapeDecoration(color: kachel, shape: StadiumBorder()),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(color: Color(0xFFE0A100), shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 7),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: grauText),
+            ),
+          ),
+        ],
+      ),
+    );
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: erklaerung == null ? pill : Tooltip(message: erklaerung, child: pill),
+        ),
+        if (aktion != null) ...[const SizedBox(width: 4), aktion!],
+      ],
+    );
+  }
 }
 
 /// Filter- und Zähler-Chip: grauer Text mit Zahl, aktiv schwarz auf hellgrau.

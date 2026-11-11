@@ -13,14 +13,16 @@ import 'package:tuto_didaktik/vorschau/widgets/antwort_eingabe.dart';
 
 const _stufenFarben = [Color(0xFFB3261E), Color(0xFFC77700), Color(0xFF2A62C4), Color(0xFF1B6B32)];
 
-Widget _testHinweis() => Container(
-  width: double.infinity,
-  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-  color: const Color(0xFFFFF1CC),
-  child: const Text(
-    'Testklasse: drei Testkonten, die du in der Schüler*innen-Ansicht selbst bedienst. '
-    'Alle Werte sind Förderinformation, kein Notenersatz.',
-    style: TextStyle(fontSize: 12, color: hinweisGelb, fontWeight: FontWeight.w600),
+Widget _testHinweis() => const Padding(
+  padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+  child: Align(
+    alignment: Alignment.centerLeft,
+    child: LeiserHinweis(
+      'Testklasse · Förderinformation, kein Notenersatz',
+      erklaerung:
+          'Drei Testkonten, die du in der Schüler*innen-Ansicht selbst bedienst. '
+          'Alle Werte sind Förderinformation, kein Notenersatz.',
+    ),
   ),
 );
 
