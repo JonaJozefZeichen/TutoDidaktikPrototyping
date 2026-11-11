@@ -90,7 +90,7 @@ class _ImportSeiteState extends State<ImportSeite> {
           controller: _text,
           minLines: 5,
           maxLines: 10,
-          style: const TextStyle(fontFamily: monoSchrift, fontSize: 12),
+          style: const TextStyle(fontFamily: codeSchrift, fontSize: 12),
           decoration: const InputDecoration(hintText: '{ "quelle": "…", "aufgaben": [ … ] }'),
         ),
         const SizedBox(height: 8),
@@ -125,11 +125,7 @@ class _Bericht extends StatelessWidget {
     final mitFehlern = neu.where((n) => (n['fehler'] as int) > 0).toList();
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: linie),
-        borderRadius: BorderRadius.circular(6),
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

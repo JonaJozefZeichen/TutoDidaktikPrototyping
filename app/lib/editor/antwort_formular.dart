@@ -545,7 +545,7 @@ class _Slot extends StatelessWidget {
     decoration: BoxDecoration(
       color: richtig ? const Color(0xFFE9F6EC) : flaeche,
       border: Border.all(color: richtig ? const Color(0xFFB4DDBE) : linie),
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(14),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -609,7 +609,7 @@ class FehlerbildEingabe extends StatelessWidget {
     fieldViewBuilder: (context, controller, fokus, _) => TextField(
       controller: controller,
       focusNode: fokus,
-      style: const TextStyle(fontFamily: monoSchrift, fontSize: 12.5),
+      style: const TextStyle(fontFamily: schrift, fontFeatures: ziffern, fontSize: 12.5),
       decoration: const InputDecoration(hintText: 'Fehlerbild, z. B. vorzeichenfehler'),
       onChanged: onChanged,
     ),

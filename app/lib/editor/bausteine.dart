@@ -59,7 +59,7 @@ class FeldRahmen extends StatelessWidget {
                     hilfeBegriffFuer(hilfe!),
                     pfad.startsWith('items/') ? 'Ein Item anlegen' : 'Eine Aufgabe anlegen',
                   ),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(16),
                   child: Tooltip(
                     message: 'Im Bauplan nachsehen: ${hilfeBegriffFuer(hilfe!)}',
                     child: const Padding(
@@ -134,7 +134,9 @@ class _TextEingabeState extends State<TextEingabe> {
     focusNode: _fokus,
     minLines: widget.mehrzeilig ? 2 : 1,
     maxLines: widget.mehrzeilig ? 8 : 1,
-    style: widget.mono ? const TextStyle(fontFamily: monoSchrift, fontSize: 12.5) : const TextStyle(fontSize: 13.5),
+    style: widget.mono
+        ? const TextStyle(fontFamily: schrift, fontFeatures: ziffern, fontSize: 12.5)
+        : const TextStyle(fontSize: 13.5),
     decoration: InputDecoration(hintText: widget.hint),
     onChanged: widget.onChanged,
   );
@@ -170,7 +172,7 @@ class WahlFeld extends StatelessWidget {
           value: wert,
           isExpanded: true,
           isDense: true,
-          style: const TextStyle(fontSize: 13.5, color: tinte, fontFamily: 'Open Sans'),
+          style: const TextStyle(fontSize: 13.5, color: tinte, fontFamily: schrift),
           items: [
             if (!pflicht || wert == null) DropdownMenuItem<Object?>(value: null, child: Text(leer)),
             if (fremd) DropdownMenuItem<Object?>(value: wert, child: Text('$wert (ungültig)')),
@@ -326,7 +328,10 @@ class _SuchDialogState extends State<_SuchDialog> {
                   for (final o in treffer)
                     ListTile(
                       dense: true,
-                      title: Text(o.wert, style: const TextStyle(fontFamily: monoSchrift, fontSize: 12.5)),
+                      title: Text(
+                        o.wert,
+                        style: const TextStyle(fontFamily: schrift, fontFeatures: ziffern, fontSize: 12.5),
+                      ),
                       subtitle: o.text == null ? null : Text(o.text!),
                       onTap: () => Navigator.pop(context, o.wert),
                     ),
@@ -396,7 +401,7 @@ class _JsonFeldState extends State<JsonFeld> {
     controller: _c,
     minLines: 2,
     maxLines: 10,
-    style: const TextStyle(fontFamily: monoSchrift, fontSize: 12),
+    style: const TextStyle(fontFamily: codeSchrift, fontSize: 12),
     decoration: InputDecoration(hintText: widget.hint ?? '[ ]', errorText: _fehler, errorMaxLines: 3),
     onChanged: _geaendert,
   );

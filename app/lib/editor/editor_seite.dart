@@ -366,7 +366,6 @@ class _EditorSeiteState extends State<EditorSeite> {
             child: Column(
               children: [
                 _kopf(e, befunde),
-                const Divider(),
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, c) {
@@ -405,77 +404,69 @@ class _EditorSeiteState extends State<EditorSeite> {
     final gesperrt = _approvalGesperrt(befunde);
     final approvals = e.aktuell.approvals;
     final korrektur = e.hatKorrektur;
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 8,
-        runSpacing: 6,
+    final klein = Theme.of(context).textTheme.bodySmall;
+    final kannSpeichern = _geaendert && _jsonUngueltig.isEmpty && !_beschaeftigt;
+    // Drei schwebende Pills mit festen Breiten, damit beim Durchklicken nichts springt:
+    // links was offen ist, in der Mitte die Navigation, rechts die Aktionen.
+    final info = SchwebePill(
+      padding: const EdgeInsets.fromLTRB(4, 4, 14, 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             tooltip: 'Zurück',
-            icon: const Icon(Icons.arrow_back, size: 20),
+            style: IconButton.styleFrom(backgroundColor: kachel),
+            icon: const Icon(Icons.arrow_back, size: 18),
             onPressed: () => Navigator.of(context).maybePop(),
           ),
-          SelectableText(
-            _id,
-            style: const TextStyle(fontFamily: monoSchrift, fontSize: 13, fontWeight: FontWeight.w600),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 150,
+            child: SelectableText(
+              _id,
+              maxLines: 1,
+              style: const TextStyle(fontFeatures: ziffern, fontSize: 13, fontWeight: FontWeight.w600),
+            ),
           ),
           StatusPlakette(e.status, korrektur: korrektur, approvals: approvals.length),
+          const SizedBox(width: 10),
           Tooltip(
             message: approvals.isEmpty
                 ? 'Noch keine Approvals auf dieser Fassung'
                 : approvals.map((a) => _personName(a.person)).join(', '),
-            child: Text('Approvals ${approvals.length}/2', style: Theme.of(context).textTheme.bodySmall),
+            child: Text('Approvals ${approvals.length}/2', style: klein),
           ),
-          Text('Fassung ${e.aktuell.nr}', style: Theme.of(context).textTheme.bodySmall),
-          if (_geaendert)
-            const Text(
-              'Nicht gespeichert',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: hinweisGelb),
-            ),
-          const SizedBox(width: 12),
-          Tooltip(
-            message: 'Cmd/Strg + S',
-            child: FilledButton(
-              key: const ValueKey('speichern'),
-              onPressed: _geaendert && _jsonUngueltig.isEmpty && !_beschaeftigt ? _speichere : null,
-              child: const Text('Speichern'),
-            ),
+          const SizedBox(width: 10),
+          Text('Fassung ${e.aktuell.nr}', style: klein),
+          const SizedBox(width: 10),
+          // Platz bleibt reserviert, damit die Pill nicht wächst.
+          SizedBox(
+            width: 116,
+            child: _geaendert
+                ? const Row(
+                    children: [
+                      Icon(Icons.circle, size: 7, color: Color(0xFFE0A100)),
+                      SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          'Nicht gespeichert',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: hinweisGelb),
+                        ),
+                      ),
+                    ],
+                  )
+                : null,
           ),
-          Tooltip(
-            message: gesperrt ?? 'Cmd/Strg + Enter',
-            child: FilledButton(
-              key: const ValueKey('approval'),
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1B6B32)),
-              onPressed: gesperrt == null && !_beschaeftigt ? _approval : null,
-              child: const Text('Approval geben'),
-            ),
-          ),
-          // Eigenes Approval zurücknehmen, solange die Fassung noch nicht live ist.
-          if (approvals.any((a) => a.person == widget.person.id) && e.liveFassung != e.aktuell.nr)
-            TextButton(
-              key: const ValueKey('approval-zuruecknehmen'),
-              onPressed: _beschaeftigt || _geaendert ? null : _approvalZuruecknehmen,
-              child: const Text('Approval zurücknehmen'),
-            ),
-          if (e.status == 'live')
-            OutlinedButton(
-              key: const ValueKey('zurueckziehen'),
-              style: OutlinedButton.styleFrom(foregroundColor: fehlerRot),
-              onPressed: _beschaeftigt ? null : _zurueckziehen,
-              child: const Text('Zurückziehen'),
-            ),
-          if (e.status == 'zurueckgezogen')
-            OutlinedButton(
-              key: const ValueKey('wiederaufnehmen'),
-              onPressed: _beschaeftigt ? null : _wiederaufnehmen,
-              child: const Text('Wieder aufnehmen'),
-            ),
-          OutlinedButton(key: const ValueKey('verlauf'), onPressed: _verlauf, child: const Text('Verlauf')),
-          const SizedBox(width: 8),
+        ],
+      ),
+    );
+    final navigation = SchwebePill(
+      padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           Tooltip(
             message: 'Vorherige Aufgabe (Strg + ,)',
             child: IconButton(
@@ -483,9 +474,13 @@ class _EditorSeiteState extends State<EditorSeite> {
               onPressed: _position > 0 ? () => _gehe(-1) : null,
             ),
           ),
-          Text(
-            _position >= 0 ? '${_position + 1} / ${widget.reihenfolge.length}' : '',
-            style: Theme.of(context).textTheme.bodySmall,
+          SizedBox(
+            width: 52,
+            child: Text(
+              _position >= 0 ? '${_position + 1} / ${widget.reihenfolge.length}' : '',
+              textAlign: TextAlign.center,
+              style: klein?.copyWith(fontFeatures: ziffern, color: tinte, fontWeight: FontWeight.w600),
+            ),
           ),
           Tooltip(
             message: 'Nächste Aufgabe (Strg + .)',
@@ -494,33 +489,101 @@ class _EditorSeiteState extends State<EditorSeite> {
               onPressed: _position >= 0 && _position + 1 < widget.reihenfolge.length ? () => _gehe(1) : null,
             ),
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Checkbox(value: _weiterNachApproval, onChanged: (v) => setState(() => _weiterNachApproval = v ?? false)),
-              Text('Nach Approval zur nächsten', style: Theme.of(context).textTheme.bodySmall),
-            ],
+          const SizedBox(width: 4),
+          Checkbox(value: _weiterNachApproval, onChanged: (v) => setState(() => _weiterNachApproval = v ?? false)),
+          Text('Nach Approval zur nächsten', style: klein),
+        ],
+      ),
+    );
+    final aktionen = SchwebePill(
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Eigenes Approval zurücknehmen, solange die Fassung noch nicht live ist.
+          if (approvals.any((a) => a.person == widget.person.id) && e.liveFassung != e.aktuell.nr) ...[
+            TextButton(
+              key: const ValueKey('approval-zuruecknehmen'),
+              onPressed: _beschaeftigt || _geaendert ? null : _approvalZuruecknehmen,
+              child: const Text('Approval zurücknehmen'),
+            ),
+            const SizedBox(width: 4),
+          ],
+          if (e.status == 'live') ...[
+            OutlinedButton(
+              key: const ValueKey('zurueckziehen'),
+              style: OutlinedButton.styleFrom(foregroundColor: fehlerRot),
+              onPressed: _beschaeftigt ? null : _zurueckziehen,
+              child: const Text('Zurückziehen'),
+            ),
+            const SizedBox(width: 4),
+          ],
+          if (e.status == 'zurueckgezogen') ...[
+            OutlinedButton(
+              key: const ValueKey('wiederaufnehmen'),
+              onPressed: _beschaeftigt ? null : _wiederaufnehmen,
+              child: const Text('Wieder aufnehmen'),
+            ),
+            const SizedBox(width: 4),
+          ],
+          OutlinedButton.icon(
+            key: const ValueKey('verlauf'),
+            onPressed: _verlauf,
+            icon: const Icon(Icons.history, size: 17),
+            label: const Text('Verlauf'),
+          ),
+          const SizedBox(width: 4),
+          Tooltip(
+            message: 'Cmd/Strg + S',
+            child: FilledButton(
+              key: const ValueKey('speichern'),
+              onPressed: kannSpeichern ? _speichere : null,
+              child: const Text('Speichern'),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Tooltip(
+            message: gesperrt ?? 'Cmd/Strg + Enter',
+            child: FilledButton.icon(
+              key: const ValueKey('approval'),
+              onPressed: gesperrt == null && !_beschaeftigt ? _approval : null,
+              icon: const Icon(Icons.check, size: 17),
+              label: const Text('Approval geben'),
+            ),
           ),
         ],
       ),
     );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [info, navigation, aktionen],
+      ),
+    );
   }
 
-  Widget _spalten(List<Befund> befunde) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      SizedBox(width: 300, child: _aufgabeSpalte(befunde)),
-      const VerticalDivider(width: 1, color: linie),
-      // Die Vorschau scrollt nie; sie passt sich der Höhe an.
-      Expanded(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Center(child: HandyVorschau(inhalt: _inhalt)),
+  /// Spalte als weiße Karte mit großem Radius, die auf der Seitenfläche schwebt.
+  Widget _spaltenKarte(Widget kind) => Container(clipBehavior: Clip.antiAlias, decoration: karte(), child: kind);
+
+  Widget _spalten(List<Befund> befunde) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(width: 300, child: _spaltenKarte(_aufgabeSpalte(befunde))),
+        // Die Vorschau scrollt nie; sie passt sich der Höhe an.
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            child: Center(child: HandyVorschau(inhalt: _inhalt)),
+          ),
         ),
-      ),
-      const VerticalDivider(width: 1, color: linie),
-      SizedBox(width: 380, child: _itemSpalte()),
-    ],
+        SizedBox(width: 380, child: _spaltenKarte(_itemSpalte())),
+      ],
+    ),
   );
 
   // --- Felder ---
@@ -533,7 +596,7 @@ class _EditorSeiteState extends State<EditorSeite> {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: SelectableText(
           wert == null ? 'wird von der App berechnet' : '$wert',
-          style: const TextStyle(fontFamily: monoSchrift, fontSize: 12, color: grauText),
+          style: const TextStyle(fontFamily: schrift, fontFeatures: ziffern, fontSize: 12, color: grauText),
         ),
       ),
       FeldArt.dropdown => WahlFeld(
@@ -606,7 +669,7 @@ class _EditorSeiteState extends State<EditorSeite> {
             pfad: 'verwendung',
             child: Text(
               '${_inhalt['verwendung']}',
-              style: const TextStyle(fontFamily: monoSchrift, fontSize: 12, color: grauText),
+              style: const TextStyle(fontFamily: schrift, fontFeatures: ziffern, fontSize: 12, color: grauText),
             ),
           ),
         ExpansionTile(
@@ -625,16 +688,20 @@ class _EditorSeiteState extends State<EditorSeite> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(child: felder),
-        const Divider(),
+        // Fehler und Hinweise als eingesetzte Kachel unten in der Karte.
         Container(
           key: const ValueKey('fehlerliste'),
           constraints: const BoxConstraints(maxHeight: 170),
-          padding: const EdgeInsets.all(10),
-          color: fehler.isNotEmpty
-              ? const Color(0xFFFBE6E4)
-              : hinweise.isNotEmpty
-              ? const Color(0xFFFBF1D9)
-              : const Color(0xFFE2F3E6),
+          margin: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: fehler.isNotEmpty
+                ? const Color(0xFFFCEBEA)
+                : hinweise.isNotEmpty
+                ? const Color(0xFFFDF4DD)
+                : const Color(0xFFE6F4EA),
+          ),
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -787,11 +854,12 @@ class _EditorSeiteState extends State<EditorSeite> {
     final abhaengig = item['abhaengig_von'];
     final vonNr = abhaengig == null ? -1 : items.indexWhere((x) => x is Map && x['item_id'] == abhaengig);
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: linie),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

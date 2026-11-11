@@ -140,13 +140,10 @@ class _ShellState extends State<Shell> {
       child: Scaffold(
         body: Column(
           children: [
+            // Kopfzeile ohne Leiste: liegt auf der Seitenfläche, Aktionen als leise Pills.
             Container(
-              height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: linie)),
-              ),
+              height: 56,
+              padding: const EdgeInsets.fromLTRB(20, 8, 12, 0),
               child: Row(
                 children: [
                   Text('Tuto Didaktik-Tool', style: Theme.of(context).textTheme.titleMedium),
@@ -156,13 +153,13 @@ class _ShellState extends State<Shell> {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: const Color(0xFFFFF4D6), borderRadius: BorderRadius.circular(4)),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: const ShapeDecoration(color: Color(0xFFFFF1CC), shape: StadiumBorder()),
                         child: Text(
                           widget.demo == null ? 'Testmodus' : 'Demo: Änderungen bleiben nur in diesem Browser',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: hinweisGelb),
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: hinweisGelb),
                         ),
                       ),
                     ),
@@ -190,30 +187,46 @@ class _ShellState extends State<Shell> {
                     label: const Text('Hilfe'),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '${widget.person.name} (${widget.person.rollenText})',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(width: 4),
-                  TextButton(onPressed: widget.onAbmelden, child: const Text('Wechseln')),
+                  PersonPill(name: widget.person.name, rolle: widget.person.rollenText, onWechseln: widget.onAbmelden),
                 ],
               ),
             ),
             Expanded(
               child: Row(
                 children: [
-                  NavigationRail(
-                    selectedIndex: _seite,
-                    labelType: NavigationRailLabelType.all,
-                    backgroundColor: Colors.white,
-                    onDestinationSelected: _wechsle,
-                    destinations: const [
-                      NavigationRailDestination(icon: Icon(Icons.dashboard_outlined), label: Text('Übersicht')),
-                      NavigationRailDestination(icon: Icon(Icons.list_alt), label: Text('Aufgaben')),
-                      NavigationRailDestination(icon: Icon(Icons.upload_file), label: Text('Import')),
-                    ],
+                  // Navigation als schwebende Pill links.
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
+                      child: SchwebePill(
+                        radius: 30,
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        // Nur so hoch wie die Einträge, damit die Pill schwebt statt die Seite zu füllen.
+                        child: SizedBox(
+                          height: 8 + 3 * 68.0,
+                          child: NavigationRail(
+                            selectedIndex: _seite,
+                            labelType: NavigationRailLabelType.all,
+                            minWidth: 72,
+                            groupAlignment: -1,
+                            onDestinationSelected: _wechsle,
+                            destinations: const [
+                              NavigationRailDestination(
+                                icon: Icon(Icons.space_dashboard_outlined),
+                                label: Text('Übersicht'),
+                              ),
+                              NavigationRailDestination(
+                                icon: Icon(Icons.format_list_bulleted),
+                                label: Text('Aufgaben'),
+                              ),
+                              NavigationRailDestination(icon: Icon(Icons.file_upload_outlined), label: Text('Import')),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  const VerticalDivider(width: 1, color: linie),
                   Expanded(
                     child: Navigator(
                       key: _navigator,

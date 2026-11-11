@@ -34,6 +34,18 @@ flutter:
     - assets/fonts/DejaVuSans.ttf
     - assets/fonts/DejaVuSans-Bold.ttf
   fonts:
+    # Schrift der Arbeitsoberfläche (Lizenz: Inter-OFL.txt)
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+    # Open Sans und IBM Plex Mono: Stil der App in der Handy-Vorschau
     - family: Open Sans
       fonts:
         - asset: assets/fonts/OpenSans-Variable.ttf

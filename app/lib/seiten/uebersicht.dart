@@ -83,17 +83,19 @@ class _Kachel extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     width: 150,
     padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      border: Border.all(color: linie),
-      borderRadius: BorderRadius.circular(6),
-    ),
+    decoration: karte(radius: 16),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '$zahl',
-          style: const TextStyle(fontFamily: monoSchrift, fontSize: 22, fontWeight: FontWeight.w600, color: tinte),
+          style: const TextStyle(
+            fontFamily: schrift,
+            fontFeatures: ziffern,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: tinte,
+          ),
         ),
         Text(titel, style: Theme.of(context).textTheme.bodySmall),
       ],
@@ -134,11 +136,8 @@ class _AbschnittState extends State<_Abschnitt> {
             Text('Nichts offen.', style: Theme.of(context).textTheme.bodySmall)
           else
             Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: linie),
-                borderRadius: BorderRadius.circular(6),
-              ),
+              clipBehavior: Clip.antiAlias,
+              decoration: karte(),
               child: Column(
                 children: [
                   const AufgabenKopfzeile(),

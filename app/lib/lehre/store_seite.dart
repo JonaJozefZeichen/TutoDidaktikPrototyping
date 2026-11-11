@@ -176,7 +176,7 @@ class _KatalogSeiteState extends State<KatalogSeite> {
 
   Widget _testHinweis(BuildContext context) => Container(
     width: double.infinity,
-    color: const Color(0xFFFFF4D6),
+    color: const Color(0xFFFFF1CC),
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
     child: Row(
       children: [

@@ -302,7 +302,7 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
               Flexible(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.white70, borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: Colors.white70, borderRadius: BorderRadius.circular(16)),
                   child: const Text(
                     'Test-Insel · Gamification aus',
                     maxLines: 1,

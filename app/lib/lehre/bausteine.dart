@@ -16,7 +16,7 @@ class Marke extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-    decoration: BoxDecoration(color: grund, borderRadius: BorderRadius.circular(4)),
+    decoration: BoxDecoration(color: grund, borderRadius: BorderRadius.circular(999)),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -185,12 +185,12 @@ class AufgabenKarte extends StatelessWidget {
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: linie),
       ),
       child: InkWell(
         key: ValueKey('karte-${a.id}'),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         onTap: onOeffnen,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 4, 8),
@@ -241,7 +241,7 @@ class AufgabenKarte extends StatelessWidget {
                     Marke(
                       '${statusNamen[a.status] ?? a.status} (nur Test)',
                       farbe: hinweisGelb,
-                      grund: const Color(0xFFFFF4D6),
+                      grund: const Color(0xFFFFF1CC),
                     ),
                 ],
               ),

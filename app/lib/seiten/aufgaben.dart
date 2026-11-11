@@ -100,7 +100,7 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
         isExpanded: true,
         initialValue: werte.contains(wert) ? wert : null,
         decoration: InputDecoration(labelText: label),
-        style: const TextStyle(fontSize: 13, color: tinte),
+        style: const TextStyle(fontFamily: schrift, fontSize: 13, color: tinte),
         items: [
           const DropdownMenuItem(value: null, child: Text('Alle')),
           for (final w in werte)
@@ -135,41 +135,46 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
         children: [
           Text('Aufgaben', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              SizedBox(
-                width: 260,
-                child: TextField(
-                  key: const ValueKey('aufgaben-suche'),
-                  decoration: const InputDecoration(
-                    hintText: 'Suche in ID, Titel, Text',
-                    prefixIcon: Icon(Icons.search, size: 18),
+          // Suche und Filter auf einer weißen Karte, damit die grauen Felder lesbar bleiben.
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: karte(),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                SizedBox(
+                  width: 260,
+                  child: TextField(
+                    key: const ValueKey('aufgaben-suche'),
+                    decoration: const InputDecoration(
+                      hintText: 'Suche in ID, Titel, Text',
+                      prefixIcon: Icon(Icons.search, size: 18),
+                    ),
+                    onChanged: (v) => setState(() => _suche = v),
                   ),
-                  onChanged: (v) => setState(() => _suche = v),
                 ),
-              ),
-              _filter('Status', _status, _werte('status'), (v) => _status = v, name: (s) => statusNamen[s] ?? s),
-              _filter(
-                'Lernwelt',
-                _lernwelt?.toString(),
-                _werte('lernwelt'),
-                (v) => _lernwelt = v == null ? null : int.parse(v),
-                name: (s) => '$s. Klasse',
-              ),
-              _filter('Themenbereich', _themenbereich, _werte('themenbereiche'), (v) => _themenbereich = v),
-              _filter('Level', _level, _werte('level'), (v) => _level = v),
-              _filter('Kompetenz', _kompetenz, _werte('kompetenzen'), (v) => _kompetenz = v),
-              _filter(
-                'Antwortformat',
-                _format,
-                _werte('formate'),
-                (v) => _format = v,
-                name: (f) => formatNamen[f] ?? f,
-              ),
-              _filter('Herkunft', _herkunft, _werte('herkunft'), (v) => _herkunft = v),
-            ],
+                _filter('Status', _status, _werte('status'), (v) => _status = v, name: (s) => statusNamen[s] ?? s),
+                _filter(
+                  'Lernwelt',
+                  _lernwelt?.toString(),
+                  _werte('lernwelt'),
+                  (v) => _lernwelt = v == null ? null : int.parse(v),
+                  name: (s) => '$s. Klasse',
+                ),
+                _filter('Themenbereich', _themenbereich, _werte('themenbereiche'), (v) => _themenbereich = v),
+                _filter('Level', _level, _werte('level'), (v) => _level = v),
+                _filter('Kompetenz', _kompetenz, _werte('kompetenzen'), (v) => _kompetenz = v),
+                _filter(
+                  'Antwortformat',
+                  _format,
+                  _werte('formate'),
+                  (v) => _format = v,
+                  name: (f) => formatNamen[f] ?? f,
+                ),
+                _filter('Herkunft', _herkunft, _werte('herkunft'), (v) => _herkunft = v),
+              ],
+            ),
           ),
           const SizedBox(height: 10),
           Text(
@@ -179,11 +184,8 @@ class _AufgabenSeiteState extends State<AufgabenSeite> {
           const SizedBox(height: 8),
           Expanded(
             child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: linie),
-                borderRadius: BorderRadius.circular(6),
-              ),
+              clipBehavior: Clip.antiAlias,
+              decoration: karte(),
               child: Column(
                 children: [
                   AufgabenKopfzeile(sortiert: _sortiert, absteigend: _absteigend, onSortiere: _sortiereNach),
@@ -267,7 +269,7 @@ class AufgabenKopfzeile extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: InkWell(
                   key: ValueKey('sortiere-${s.name}'),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(999),
                   onTap: onSortiere == null ? null : () => onSortiere!(s),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
@@ -340,7 +342,7 @@ class AufgabenZeile extends StatelessWidget {
                   Text('${zeile['titel'] ?? '(ohne Titel)'}', maxLines: 1, overflow: TextOverflow.ellipsis),
                   Text(
                     '${zeile['id']}',
-                    style: const TextStyle(fontFamily: monoSchrift, fontSize: 11, color: grauText),
+                    style: const TextStyle(fontFamily: schrift, fontFeatures: ziffern, fontSize: 11, color: grauText),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],

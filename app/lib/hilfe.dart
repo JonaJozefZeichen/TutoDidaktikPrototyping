@@ -202,7 +202,7 @@ class _HilfeLeisteState extends State<HilfeLeiste> {
                             listBullet: const TextStyle(fontSize: 13, color: tinte),
                             tableBody: const TextStyle(fontSize: 12, color: tinte),
                             tableHead: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: tinte),
-                            code: const TextStyle(fontFamily: monoSchrift, fontSize: 12, color: tinte),
+                            code: const TextStyle(fontFamily: codeSchrift, fontSize: 12, color: tinte),
                           ),
                         ),
                       ],
