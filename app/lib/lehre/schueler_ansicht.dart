@@ -8,6 +8,7 @@ import 'package:tuto_didaktik/lehre/zustand.dart';
 import 'package:tuto_didaktik/lehre/zuweisen_seite.dart';
 import 'package:tuto_didaktik/thema.dart';
 import 'package:tuto_didaktik/vorschau/design_system_controller.dart';
+import 'package:tuto_didaktik/vorschau/iphone_rahmen.dart';
 import 'package:tuto_didaktik/vorschau/widgets/antwort_eingabe.dart';
 
 /// Schüler\*innen-Ansicht: ein Handy wie in der App, angemeldet mit einem
@@ -170,10 +171,10 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
                 children: [
                   LayoutBuilder(
                     builder: (context, c) {
-                      final skala = (c.maxHeight / 720).clamp(0.55, 1.0);
+                      final skala = (c.maxHeight / iphoneHoehe).clamp(0.5, 1.0);
                       return SizedBox(
-                        width: 390 * skala,
-                        height: 720 * skala,
+                        width: iphoneBreite * skala,
+                        height: iphoneHoehe * skala,
                         child: FittedBox(child: _handy(context)),
                       );
                     },
@@ -242,30 +243,20 @@ class _SchuelerAnsichtState extends State<SchuelerAnsicht> {
 
   Widget _handy(BuildContext context) {
     final tokens = context.designSystem;
-    return Container(
-      width: 390,
-      height: 720,
-      decoration: BoxDecoration(
-        color: tinte,
-        borderRadius: BorderRadius.circular(38),
-        boxShadow: const [BoxShadow(blurRadius: 18, color: Color(0x22000000), offset: Offset(0, 6))],
-      ),
-      padding: const EdgeInsets.all(9),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: MediaQuery(
-          data: MediaQuery.of(context).copyWith(size: const Size(372, 702), padding: EdgeInsets.zero),
-          child: DecoratedBox(
-            decoration: BoxDecoration(gradient: tokens.backgroundGradient),
-            child: Material(
-              type: MaterialType.transparency,
-              child: switch (_bildschirm) {
-                _Bildschirm.insel => _insel(context),
-                _Bildschirm.postfach => _postfach(context),
-                _Bildschirm.loesen => _loesen(context),
-                _Bildschirm.fertig => _fertig(context),
-              },
-            ),
+    return IPhoneRahmen(
+      hintergrund: tokens.backgroundGradient,
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(size: iphoneInhalt, padding: EdgeInsets.zero),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(),
+          child: Material(
+            type: MaterialType.transparency,
+            child: switch (_bildschirm) {
+              _Bildschirm.insel => _insel(context),
+              _Bildschirm.postfach => _postfach(context),
+              _Bildschirm.loesen => _loesen(context),
+              _Bildschirm.fertig => _fertig(context),
+            },
           ),
         ),
       ),
