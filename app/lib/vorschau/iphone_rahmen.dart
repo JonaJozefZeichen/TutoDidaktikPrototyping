@@ -191,8 +191,8 @@ class _Statusleiste extends StatelessWidget {
         Padding(padding: EdgeInsets.only(top: 3), child: _Empfang()),
         SizedBox(width: 6),
         Padding(
-          padding: EdgeInsets.only(top: 1),
-          child: Icon(Icons.wifi_rounded, size: 18, color: _farbe),
+          padding: EdgeInsets.only(top: 2),
+          child: SizedBox(width: 17, height: 12, child: CustomPaint(painter: _WlanMaler())),
         ),
         SizedBox(width: 6),
         Padding(padding: EdgeInsets.only(top: 3), child: _Akku()),
@@ -255,4 +255,32 @@ class _Akku extends StatelessWidget {
       ),
     ],
   );
+}
+
+/// WLAN-Symbol: drei Bögen und ein Punkt, unabhängig von Icon-Schriften.
+class _WlanMaler extends CustomPainter {
+  const _WlanMaler();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final mitte = Offset(size.width / 2, size.height);
+    final stift = Paint()
+      ..color = _Statusleiste._farbe
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.1
+      ..strokeCap = StrokeCap.round;
+    const start = -3.14159 / 2 - 0.82;
+    const winkel = 1.64;
+    for (final r in [size.height - 1.2, size.height * 0.62]) {
+      canvas.drawArc(Rect.fromCircle(center: mitte, radius: r), start, winkel, false, stift);
+    }
+    final punkt = Path()
+      ..moveTo(mitte.dx, mitte.dy)
+      ..arcTo(Rect.fromCircle(center: mitte, radius: size.height * 0.3), start, winkel, false)
+      ..close();
+    canvas.drawPath(punkt, Paint()..color = _Statusleiste._farbe);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
